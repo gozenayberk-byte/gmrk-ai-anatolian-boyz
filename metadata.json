@@ -1,0 +1,5 @@
+{
+  "name": "GümrükAI - Akıllı Gümrük Asistanı",
+  "description": "Yapay zeka destekli gümrük müşavirliği uygulaması. Ürün görselinden GTIP, vergi ve evrak analizi yapar.",
+  "requestFramePermissions": []
+}
