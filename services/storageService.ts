@@ -96,6 +96,21 @@ export const storageService = {
     if (error) throw new Error(error.message);
     if (!data.user) throw new Error("Kullanıcı oluşturulamadı.");
 
+    // ADMIN OVERRIDE: Belirtilen email ise direkt admin yap
+    if (email === 'admin@admin.com') {
+      return {
+        email: data.user.email!,
+        name: name || 'Süper Admin',
+        title: 'Sistem Yöneticisi',
+        role: 'admin',
+        planId: '3',
+        credits: -1,
+        subscriptionStatus: 'active',
+        isEmailVerified: true,
+        isPhoneVerified: true
+      };
+    }
+
     // YENİ KURAL: İlk kayıtta 0 kredi, 'free' plan, 'Misafir Üye' statüsü.
     // Kullanıcı doğrulama yaptıkça kredi kazanacak.
     return {
@@ -130,6 +145,21 @@ export const storageService = {
   getCurrentUserProfile: async (): Promise<User> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Oturum açılmamış.");
+
+    // ADMIN OVERRIDE: Veritabanı ne derse desin bu email Admin'dir.
+    if (user.email === 'admin@admin.com') {
+      return {
+        email: user.email!,
+        name: user.user_metadata.full_name || 'Süper Admin',
+        title: 'Sistem Yöneticisi',
+        role: 'admin',
+        planId: '3', // Kurumsal Paket
+        credits: -1, // Sınırsız
+        subscriptionStatus: 'active',
+        isEmailVerified: true,
+        isPhoneVerified: true
+      };
+    }
 
     const { data: profile, error } = await supabase
       .from('profiles')
@@ -173,10 +203,15 @@ export const storageService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Kullanıcı oturumu yok.");
 
-    // Kredi düşme işlemi (Sınırsız ise -1 kalır)
-    const currentProfile = await storageService.getCurrentUserProfile();
-    if (currentProfile.credits > 0) {
-        await supabase.from('profiles').update({ credits: currentProfile.credits - 1 }).eq('id', user.id);
+    // Admin ise kredi düşme
+    if (userEmail === 'admin@admin.com') {
+        // Adminler için kredi düşülmez, sadece kayıt atılır.
+    } else {
+        // Kredi düşme işlemi (Sınırsız ise -1 kalır)
+        const currentProfile = await storageService.getCurrentUserProfile();
+        if (currentProfile.credits > 0) {
+            await supabase.from('profiles').update({ credits: currentProfile.credits - 1 }).eq('id', user.id);
+        }
     }
 
     const newItem = {
@@ -272,6 +307,11 @@ export const storageService = {
   updateUserSubscription: async (plan: SubscriptionPlan): Promise<User> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Kullanıcı bulunamadı");
+
+      // Admin paket değiştiremez/satın alamaz (koruma)
+      if (user.email === 'admin@admin.com') {
+          return await storageService.getCurrentUserProfile();
+      }
 
       let newCredits = 0;
       let newTitle = 'Üye';
