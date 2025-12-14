@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { CustomsAnalysis } from '../types';
 import { 
@@ -42,11 +43,11 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
   // Kullanıcı giriş yapmamışsa (userPlanId undefined ise) Guest modundadır
   const isGuest = !userPlanId;
-  // Girişimci Paketi (ID: '1')
-  const isBasicPlan = userPlanId === '1';
+  // Girişimci Paketi (ID: '1') veya Ücretsiz Paket (ID: 'free')
+  const isBasicOrFreePlan = userPlanId === '1' || userPlanId === 'free';
 
-  // Fiyat ve Mail bölümleri hem Misafir hem de Girişimci için kilitli
-  const isPriceAndMailLocked = isGuest || isBasicPlan;
+  // Fiyat ve Mail bölümleri hem Misafir, hem Ücretsiz hem de Girişimci için kilitli
+  const isPriceAndMailLocked = isGuest || isBasicOrFreePlan;
 
   // Kilitli İçerik Bileşeni (Pro Upgrade)
   const LockedFeature = ({ title, description, type }: { title: string, description: string, type: 'login' | 'upgrade' }) => (

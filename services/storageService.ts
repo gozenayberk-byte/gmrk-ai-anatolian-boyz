@@ -13,7 +13,7 @@ const FALLBACK_CONTENT: SiteContent = {
   freeCreditsPromo: { 
     isActive: true, 
     title: "YENİ ÜYELERE ÖZEL", 
-    description: "Bugün kayıt ol, anında 3 Ücretsiz Analiz Hakkı kazan! Kredi kartı gerekmez." 
+    description: "Hesabınızı doğrulayın, anında Ücretsiz Analiz Hakkı kazanın! Kredi kartı gerekmez." 
   },
   roi: { 
     badge: "NEDEN GÜMRÜKAI?", 
@@ -41,7 +41,7 @@ const FALLBACK_CONTENT: SiteContent = {
     items: [
       { question: "GTIP tespitleri ne kadar doğru?", answer: "Gemini 3.0 Pro modelimiz, güncel 2024 Türk Gümrük Tarife Cetveli üzerinde eğitilmiştir ve %98 üzerinde doğruluk oranına sahiptir." },
       { question: "Hangi dosya formatlarını destekliyorsunuz?", answer: "JPG, PNG, WEBP formatlarındaki tüm ürün görsellerini yükleyebilirsiniz." },
-      { question: "Ücretsiz deneme hakkım var mı?", answer: "Evet, yeni üye olan herkese 50 adet ücretsiz sorgu hakkı tanımlanmaktadır." },
+      { question: "Ücretsiz deneme hakkım var mı?", answer: "Evet, yeni üye olduktan sonra SMS ve E-posta doğrulamasını yaparak ücretsiz sorgu hakkı kazanabilirsiniz." },
       { question: "Fatura kesiyor musunuz?", answer: "Evet, tüm ödemeleriniz için kurumsal e-Fatura düzenlenmekte ve mail adresinize gönderilmektedir." }
     ]
   },
@@ -96,13 +96,15 @@ export const storageService = {
     if (error) throw new Error(error.message);
     if (!data.user) throw new Error("Kullanıcı oluşturulamadı.");
 
+    // YENİ KURAL: İlk kayıtta 0 kredi, 'free' plan, 'Misafir Üye' statüsü.
+    // Kullanıcı doğrulama yaptıkça kredi kazanacak.
     return {
       email: data.user.email!,
       name: name,
-      title: 'Yeni Üye',
+      title: 'Misafir Üye',
       role: 'user',
-      planId: '1',
-      credits: 50,
+      planId: 'free',
+      credits: 0,
       subscriptionStatus: 'active',
       isEmailVerified: false,
       isPhoneVerified: false
@@ -136,14 +138,15 @@ export const storageService = {
       .single();
 
     if (error || !profile) {
-      // Profil veritabanında henüz oluşmadıysa veya hata varsa
+      // Profil veritabanında henüz oluşmadıysa veya hata varsa fallback
+      // YENİ KURAL: Fallback de 0 kredi ve 'free' plan olmalı.
       return {
         email: user.email!,
         name: user.user_metadata.full_name || 'Kullanıcı',
-        title: 'Üye',
+        title: 'Misafir Üye',
         role: 'user',
-        planId: '1',
-        credits: 50,
+        planId: 'free',
+        credits: 0,
         subscriptionStatus: 'active',
         isEmailVerified: !!user.email_confirmed_at,
         isPhoneVerified: !!user.phone_confirmed_at
@@ -154,8 +157,8 @@ export const storageService = {
       email: profile.email,
       name: profile.full_name,
       title: profile.title,
-      role: profile.role || 'user', // DB'de role kolonu varsa
-      planId: profile.plan_id,
+      role: profile.role || 'user', 
+      planId: profile.plan_id || 'free', // Veritabanında null ise free
       credits: profile.credits,
       subscriptionStatus: profile.subscription_status,
       isEmailVerified: profile.is_email_verified,
@@ -170,7 +173,7 @@ export const storageService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Kullanıcı oturumu yok.");
 
-    // Kredi düşme işlemi
+    // Kredi düşme işlemi (Sınırsız ise -1 kalır)
     const currentProfile = await storageService.getCurrentUserProfile();
     if (currentProfile.credits > 0) {
         await supabase.from('profiles').update({ credits: currentProfile.credits - 1 }).eq('id', user.id);
@@ -270,12 +273,28 @@ export const storageService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Kullanıcı bulunamadı");
 
-      let newCredits = 50;
+      let newCredits = 0;
       let newTitle = 'Üye';
 
-      if (plan.id === '1') { newTitle = 'Girişimci Üye'; newCredits = 50; }
-      if (plan.id === '2') { newTitle = 'Profesyonel İthalatçı'; newCredits = -1; }
-      if (plan.id === '3') { newTitle = 'Kurumsal Üye'; newCredits = -1; }
+      // YENİ KURAL: Plan mantığı
+      // 1: Girişimci -> 50 Kredi
+      // 2: Profesyonel -> Sınırsız (-1)
+      // 3: Kurumsal -> Sınırsız (-1)
+      
+      if (plan.id === '1') { 
+          newTitle = 'Girişimci Üye'; 
+          newCredits = 50; 
+      } else if (plan.id === '2') { 
+          newTitle = 'Profesyonel İthalatçı'; 
+          newCredits = -1; // Sınırsız
+      } else if (plan.id === '3') { 
+          newTitle = 'Kurumsal Üye'; 
+          newCredits = -1; // Sınırsız
+      } else {
+          // Fallback (Bilinmeyen paket)
+          newTitle = 'Üye';
+          newCredits = 0;
+      }
 
       // 1. Profili Güncelle
       const { error: profileError } = await supabase
@@ -344,7 +363,7 @@ export const storageService = {
           name: p.full_name,
           title: p.title,
           role: 'user', 
-          planId: p.plan_id,
+          planId: p.plan_id || 'free',
           credits: p.credits,
           subscriptionStatus: p.subscription_status,
           isEmailVerified: p.is_email_verified,
@@ -424,8 +443,7 @@ export const storageService = {
   },
   
   verifyUserContact: async (email: string, type: 'email' | 'phone', code: string, phoneNumber?: string): Promise<{ success: boolean, message: string, user?: User }> => {
-      // Simüle edilmiş doğrulama (Her 6 haneli kod kabul edilir)
-      // Production'da: Supabase DB'de kod doğrulaması yapılmalı.
+      // Simüle edilmiş doğrulama
       if (code.length === 6) {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
@@ -434,12 +452,13 @@ export const storageService = {
                   updates.phone_number = phoneNumber;
               }
               
+              // YENİ KURAL: Doğrulama başına +1 kredi
+              // Bu fonksiyon mevcut krediyi okuyup üstüne eklediği için 0'dan 1'e, 1'den 2'ye çıkarır.
               const current = await storageService.getCurrentUserProfile();
-              // Doğrulama ödülü: +1 kredi
               await supabase.from('profiles').update({ ...updates, credits: current.credits + 1 }).eq('id', user.id);
               
               const updatedUser = await storageService.getCurrentUserProfile();
-              return { success: true, message: "Doğrulandı! 1 Kredi hesabınıza eklendi.", user: updatedUser };
+              return { success: true, message: "Doğrulandı! +1 Analiz Kredisi hesabınıza eklendi.", user: updatedUser };
           }
       }
       return { success: false, message: "Kod hatalı veya süresi dolmuş." };

@@ -61,7 +61,7 @@ export interface User {
   name: string;
   title: string;
   role: 'user' | 'admin';
-  planId: string; // '1': Girişimci, '2': Pro, '3': Kurumsal
+  planId: string; // 'free': Başlangıç, '1': Girişimci, '2': Pro, '3': Kurumsal
   credits: number; // Kalan sorgu hakkı (-1 ise sınırsız)
   subscriptionStatus: 'active' | 'cancelled';
   // Yeni Doğrulama Alanları

@@ -45,7 +45,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
     fetchData();
   }, [user]);
 
+  // Plan bulunamazsa (örneğin ID='free') fallback uygula
   const currentPlan = plans.find(p => p.id === user.planId);
+  const planName = currentPlan ? currentPlan.name : (user.planId === 'free' ? "Ücretsiz Başlangıç" : "Bilinmeyen Paket");
 
   // Helper component for Tabs
   const TabButton = ({ id, label, icon: Icon }: { id: typeof activeTab, label: string, icon: any }) => (
@@ -117,7 +119,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                     Kredi Kazan!
                 </div>
                 <p className="text-indigo-100 text-sm mb-4 leading-relaxed">
-                   Hesabını doğrulayarak ücretsiz 2 analiz hakkı daha kazanabilirsin.
+                   Hesabını doğrulayarak ücretsiz analiz hakkı kazanabilirsin.
                 </p>
                 <button 
                   onClick={onOpenVerification}
@@ -196,10 +198,10 @@ const UserProfile: React.FC<UserProfileProps> = ({
                      </div>
                      <div>
                        <div className="text-sm text-slate-500 font-medium uppercase tracking-wider">Aktif Paket</div>
-                       <div className="text-2xl font-bold text-slate-900">{currentPlan?.name || "Bilinmeyen Paket"}</div>
+                       <div className="text-2xl font-bold text-slate-900">{planName}</div>
                        <div className="text-sm text-slate-500 flex items-center gap-1 mt-1">
                           <CheckCircle2 className="w-3 h-3 text-green-500" />
-                          {user.subscriptionStatus === 'active' ? 'Otomatik yenileme açık' : 'İptal edildi'}
+                          {user.subscriptionStatus === 'active' ? 'Kullanım aktif' : 'İptal edildi'}
                        </div>
                      </div>
                   </div>
@@ -209,7 +211,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                       onClick={onUpgradeClick}
                       className="px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg shadow-sm transition-all whitespace-nowrap"
                     >
-                      Paketi Yükselt
+                      {user.planId === 'free' ? 'Profesyonel Pakete Geç' : 'Paketi Yükselt'}
                     </button>
                   )}
                 </div>
@@ -226,10 +228,10 @@ const UserProfile: React.FC<UserProfileProps> = ({
                            style={{ width: user.credits === -1 ? '100%' : `${Math.min((user.credits / 50) * 100, 100)}%` }}
                          ></div>
                       </div>
-                      {user.credits === 0 && !user.isEmailVerified && (
+                      {user.credits === 0 && (!user.isEmailVerified || !user.isPhoneVerified) && (
                           <div className="mt-2 text-xs text-red-500 font-medium flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3" />
-                              Kredi kazanmak için e-posta doğrulaması yapın.
+                              Kredi kazanmak için doğrulama yapın.
                           </div>
                       )}
                    </div>
@@ -237,15 +239,15 @@ const UserProfile: React.FC<UserProfileProps> = ({
                    <div className="border border-slate-200 rounded-xl p-5">
                       <div className="text-sm text-slate-500 font-medium mb-1">Yenileme Tarihi</div>
                       <div className="text-3xl font-bold text-slate-900">
-                         {new Date(new Date().setDate(new Date().getDate() + 30)).toLocaleDateString('tr-TR')}
+                         {user.planId === 'free' ? '-' : new Date(new Date().setDate(new Date().getDate() + 30)).toLocaleDateString('tr-TR')}
                       </div>
                       <div className="text-xs text-slate-400 mt-2">
-                        Bir sonraki fatura dönemine kadar geçerlidir.
+                        {user.planId === 'free' ? 'Paket satın alındığında belirlenir.' : 'Bir sonraki fatura dönemine kadar geçerlidir.'}
                       </div>
                    </div>
                 </div>
 
-                {user.subscriptionStatus === 'active' && (
+                {user.subscriptionStatus === 'active' && user.planId !== 'free' && (
                   <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
                     <button 
                       onClick={onCancelSubscription}
