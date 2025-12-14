@@ -109,6 +109,16 @@ export interface SiteContent {
     titleLine2: string;
     description: string;
   };
+  productDemo: { // YENİ: Ürün görseli ve açıklama alanı
+    title: string;
+    description: string;
+    imageUrl: string;
+  };
+  painPoints: { // YENİ: Sorun/Çözüm Modülü
+    title: string;
+    subtitle: string;
+    items: { icon: string; title: string; desc: string }[];
+  };
   freeCreditsPromo: {
     isActive: boolean;
     title: string;
@@ -153,14 +163,14 @@ export interface SiteContent {
     proFeature2Title: string;
     proFeature2Desc: string;
   };
-  updates: SystemUpdate[]; // YENİ: Dinamik güncellemeler
+  updates: SystemUpdate[]; 
   testimonials: Testimonial[];
   tracking: {
     metaPixelId: string;
     tiktokPixelId: string;
   };
   emailSettings: EmailSettings;
-  paymentSettings: PaymentSettings; // YENİ: Iyzico ayarları
+  paymentSettings: PaymentSettings; 
   footer: {
     brandName: string;
     brandDesc: string;

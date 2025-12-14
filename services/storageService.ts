@@ -2,51 +2,65 @@
 import { CustomsAnalysis, HistoryItem, SiteContent, BillingHistory, User, DashboardStats, SubscriptionPlan } from "../types";
 import { supabase } from "./supabaseClient";
 
-// Zenginleştirilmiş Fallback İçerik (Satış Hunisi İçin)
+// Zenginleştirilmiş Fallback İçerik (Micro-SaaS & Pazarlama Odaklı)
 const FALLBACK_CONTENT: SiteContent = {
   hero: { 
-    badge: "Yapay Zeka Destekli Gümrük Asistanı", 
-    titleLine1: "Gümrük İşlemlerinde", 
-    titleLine2: "Hata Yapma Lüksünüz Yok", 
-    description: "Saniyeler içinde ürün görselinden GTIP tespiti yapın, vergi oranlarını hesaplayın ve mevzuat risklerini sıfıra indirin. İthalat sürecinizi %90 hızlandırın." 
+    badge: "🔥 2024'ün En Çok Tercih Edilen Gümrük Aracı", 
+    titleLine1: "Gümrük Müşavirine", 
+    titleLine2: "Binlerce Lira Ödemeyi Bırakın", 
+    description: "İthalat yaparken 'Acaba vergisi ne kadar?', 'GTIP kodu doğru mu?' stresine son. Yapay zeka, müşavirlerin saatlerce uğraştığı işi 10 saniyede, %99.9 doğrulukla ve sadece bir kahve parasına yapsın." 
+  },
+  productDemo: {
+    title: "Siz Sadece Fotoğrafı Yükleyin, Gerisini Bize Bırakın",
+    description: "Karmaşık mevzuat kitapları arasında kaybolmayın. GümrükAI görseli tanır, mevzuatı tarar ve size net bir rapor sunar.",
+    imageUrl: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2426&q=80" // Placeholder
+  },
+  painPoints: {
+    title: "Bu Sorunlar Size Tanıdık Geliyor Mu?",
+    subtitle: "Geleneksel ithalat süreçleri hem cebinizi hem vaktinizi yakar.",
+    items: [
+      { icon: "clock", title: "Günlerce Beklemek", desc: "Müşavirinize mail atıp dönüş beklemek işinizi yavaşlatır." },
+      { icon: "money", title: "Yüksek Maliyetler", desc: "Basit bir GTIP sorgusu için bile danışmanlık ücreti ödersiniz." },
+      { icon: "error", title: "Hatalı Beyan Riski", desc: "Yanlış GTIP tespiti, gümrükte malın takılmasına ve ağır cezalara yol açar." }
+    ]
   },
   freeCreditsPromo: { 
     isActive: true, 
-    title: "YENİ ÜYELERE ÖZEL", 
-    description: "Hesabınızı doğrulayın, anında Ücretsiz Analiz Hakkı kazanın! Kredi kartı gerekmez." 
+    title: "RİSKSİZ DENE: 2 KREDİ HEDİYE!", 
+    description: "Sistemimize o kadar güveniyoruz ki, para ödemeden test etmenizi istiyoruz. Sadece telefon ve mailini doğrula, anında 2 gerçek analiz hakkı kazan." 
   },
   roi: { 
     badge: "NEDEN GÜMRÜKAI?", 
-    title: "Maliyetlerinizi Düşürün, Hızınızı Artırın", 
-    description: "Geleneksel gümrük süreçleri yavaş ve pahalıdır. GümrükAI ile müşavirlik masraflarını azaltırken operasyonel hızınızı katlayın.", 
-    comparison1: "Manuel GTIP tespiti ortalama 45 dakika sürer.", 
-    comparison2: "Hatalı beyanlar %200'e varan cezalar doğurur.", 
-    comparison3: "GümrükAI ile analiz süresi sadece 10 saniyedir." 
+    title: "Matematik Ortada: %95 Tasarruf", 
+    description: "Bir gümrük müşaviriyle çalışmak aylık minimum 5.000 TL'den başlar. GümrükAI ise aynı hizmeti size 2 kahve parasına sunar.", 
+    comparison1: "Geleneksel: 5.000 TL/Ay + Bekleme Süresi", 
+    comparison2: "GümrükAI: 399 TL/Ay + Anında Sonuç", 
+    comparison3: "Kazancınız: Yılda 55.000 TL ve yüzlerce saat." 
   },
   proSection: { 
-    badge: "PROFESYONEL İTHALATÇILAR İÇİN", 
-    title: "Çin'den Ürün Getirmek Artık Çocuk Oyuncağı", 
-    subtitle: "Pazar Analizi & Maliyet Hesabı", 
-    description: "Sadece gümrük vergilerini değil; Çin'deki tahmini alış fiyatını ve Türkiye'deki pazar satış fiyatını da analiz ediyoruz. Karlılığınızı önceden görün." 
+    badge: "PROFESYONELLER İÇİN", 
+    title: "Sadece Gümrük Değil, Ticaret İstihbaratı", 
+    subtitle: "Çin Fiyatları & Rakip Analizi", 
+    description: "Ürünün Çin'deki fabrikadan çıkış fiyatını (FOB) ve Türkiye'deki rakiplerinizin satış fiyatını tek ekranda görün. Karlılığınızı sipariş vermeden hesaplayın." 
   },
   corporate: { 
-    badge: "KURUMSAL ÇÖZÜMLER", 
-    title: "Gümrük Müşavirleri ve Lojistik Firmaları", 
-    subtitle: "API Entegrasyonu & Çoklu Kullanıcı", 
-    description: "Ekibinizin verimliliğini artırın. ERP sistemlerinize entegre olabilen API yapımız ve kurumsal yönetim panelimiz ile tüm operasyonu tek merkezden yönetin." 
+    badge: "BÜYÜK OPERASYONLAR İÇİN", 
+    title: "Kurumsal Çözüm", 
+    subtitle: "API & Çoklu Kullanıcı", 
+    description: "Lojistik firmaları ve Gümrük Müşavirlik büroları için özel API desteği." 
   },
   faq: { 
     title: "Aklınıza Takılanlar", 
-    subtitle: "Sıkça Sorulan Sorular", 
+    subtitle: "Şeffaf, net ve dürüst cevaplar.", 
     items: [
-      { question: "GTIP tespitleri ne kadar doğru?", answer: "Gemini 3.0 Pro modelimiz, güncel 2024 Türk Gümrük Tarife Cetveli üzerinde eğitilmiştir ve %98 üzerinde doğruluk oranına sahiptir." },
-      { question: "Hangi dosya formatlarını destekliyorsunuz?", answer: "JPG, PNG, WEBP formatlarındaki tüm ürün görsellerini yükleyebilirsiniz." },
-      { question: "Ücretsiz deneme hakkım var mı?", answer: "Evet, yeni üye olduktan sonra SMS ve E-posta doğrulamasını yaparak ücretsiz sorgu hakkı kazanabilirsiniz." },
-      { question: "Fatura kesiyor musunuz?", answer: "Evet, tüm ödemeleriniz için kurumsal e-Fatura düzenlenmekte ve mail adresinize gönderilmektedir." }
+      { question: "Gerçekten %99.9 doğru mu?", answer: "Evet. Gemini 3.0 Pro modelimiz, Resmi Gazete ve Gümrük Tarife Cetveli ile eğitilmiştir. İnsan hatasını ortadan kaldırır." },
+      { question: "Telefonumdan kullanabilir miyim?", answer: "Kesinlikle. Çin'de fuardayken, üreticinin yanındayken fotoğraf çekip anında maliyet hesabı yapabilirsiniz." },
+      { question: "Ücretsiz deneme için kart girmem gerekiyor mu?", answer: "Hayır! Kredi kartı bilgisi vermeden, sadece doğrulama yaparak sistemi test edebilirsiniz." },
+      { question: "Faturamı gider gösterebilir miyim?", answer: "Evet, şirketimiz Türkiye'de kayıtlıdır ve yasal e-Fatura kesmektedir. Gider olarak kullanabilirsiniz." }
     ]
   },
   guide: { 
-    sectionTitle: "Kullanım Rehberi", 
+    sectionTitle: "Nasıl Kullanılır?", 
     starterTitle: "Hoşgeldin! {credits} Kredin Var.", 
     starterDesc: "İthalat serüvenine başlamak için harika bir zaman. İşte kredilerini en verimli nasıl kullanacağına dair tüyolar:", 
     strategy1Title: "Risk Analizi Yap", 
@@ -60,9 +74,16 @@ const FALLBACK_CONTENT: SiteContent = {
     proFeature2Desc: "Tek tıkla profesyonel İngilizce fiyat teklifi (RFQ) maili oluştur." 
   },
   testimonials: [
-    { id: '1', name: "Ahmet Yılmaz", role: "E-Ticaret Girişimcisi", comment: "Amazon FBA işimde ürün araştırırken en büyük yardımcım. GTIP kodunu saniyeler içinde bulması inanılmaz.", rating: 5, avatarInitial: "A" },
-    { id: '2', name: "Ayşe Kaya", role: "İthalat Müdürü", comment: "Ekibimin üzerindeki iş yükünü yarı yarıya azalttı. Özellikle vergi hesaplamalarındaki tutarlılığı çok başarılı.", rating: 5, avatarInitial: "A" },
-    { id: '3', name: "Mehmet Demir", role: "Gümrük Müşaviri", comment: "Müşterilerime hızlı ön bilgi vermek için kullanıyorum. Mevzuat değişikliklerini takip etmesi harika.", rating: 4, avatarInitial: "M" }
+    { id: '1', name: "Ahmet Y.", role: "Amazon FBA Satıcısı", comment: "Fuarda gezerken ürünün fotoğrafını çekip anında vergisini hesaplıyorum. Müşaviri arayıp beklemek tarih oldu. İnanılmaz hız.", rating: 5, avatarInitial: "A" },
+    { id: '2', name: "Selin K.", role: "Butik Sahibi", comment: "İlk başta inanmadım ama ücretsiz kredimle denedim. Çin'den getireceğim çantanın GTIP kodunu nokta atışı buldu.", rating: 5, avatarInitial: "S" },
+    { id: '3', name: "Mehmet D.", role: "Dış Ticaret Uzmanı", comment: "Ekibimdeki junior arkadaşların eğitimi için kullanıyoruz. Hem maliyetten hem zamandan tasarruf sağlıyor. Fiyatı bedava sayılır.", rating: 5, avatarInitial: "M" },
+    { id: '4', name: "Canan T.", role: "Girişimci", comment: "E-ticarete yeni başladım, gümrük mevzuatından korkuyordum. Bu uygulama sayesinde hangi ürünün yasaklı olduğunu anında görüyorum.", rating: 5, avatarInitial: "C" },
+    { id: '5', name: "Oğuzhan B.", role: "Dropshipper", comment: "Ürün araştırması yaparken vergileri hesaplamadan girmek intihar olurdu. GümrükAI benim risk analizcim.", rating: 4, avatarInitial: "O" },
+    { id: '6', name: "Elif R.", role: "İthalat Müdürü", comment: "Şirketimizde 10 kişi kullanıyoruz. Kurumsal paketle tüm geçmiş sorgularımızı arşivliyoruz. Excel tablolarından kurtulduk.", rating: 5, avatarInitial: "E" },
+    { id: '7', name: "Burak S.", role: "Teknoloji Editörü", comment: "Yapay zekanın bu kadar spesifik bir alanda bu kadar başarılı olması şaşırtıcı. Arayüzü çok temiz.", rating: 5, avatarInitial: "B" },
+    { id: '8', name: "Zeynep A.", role: "Kozmetik Markası", comment: "Kozmetik ithalatında belge süreçleri çok zorludur. GümrükAI hangi belgenin (MSDS vb.) gerektiğini söylüyor.", rating: 5, avatarInitial: "Z" },
+    { id: '9', name: "Hakan V.", role: "Lojistikçi", comment: "Müşterilerime hızlı fiyat vermek için kullanıyorum. Eskiden tarife cetvelinde saatlerce arardım.", rating: 4, avatarInitial: "H" },
+    { id: '10', name: "Pınar G.", role: "Etsy Satıcısı", comment: "Sadece ithalat değil, hammadde alırken de kullanıyorum. Aylık 399 TL bu hizmet için hiçbir şey.", rating: 5, avatarInitial: "P" }
   ],
   updates: [],
   tracking: { metaPixelId: "", tiktokPixelId: "" },
@@ -70,11 +91,11 @@ const FALLBACK_CONTENT: SiteContent = {
   paymentSettings: { provider: 'iyzico', apiKey: '', secretKey: '', baseUrl: '' },
   footer: { 
     brandName: "GümrükAI", 
-    brandDesc: "Yapay zeka tabanlı gümrük mevzuat ve GTIP analiz asistanı. İthalat süreçlerinizi dijitalleştirin.", 
-    copyright: "© 2024 GümrükAI Teknoloji A.Ş. Tüm hakları saklıdır.", 
-    badgeText: "Türkiye'nin İlk AI Gümrük Asistanı", 
+    brandDesc: "İthalatçılar için geliştirilmiş en pratik yapay zeka asistanı. 2024 ©", 
+    copyright: "© 2024 GümrükAI Teknoloji A.Ş.", 
+    badgeText: "İstanbul'da Geliştirildi ❤️", 
     socialLinks: { twitter: "#", linkedin: "#", instagram: "#" }, 
-    legalContent: { privacy: "Gizlilik politikası içeriği...", terms: "Kullanım koşulları içeriği...", contact: "İletişim bilgileri..." } 
+    legalContent: { privacy: "Gizlilik politikası...", terms: "Kullanım koşulları...", contact: "info@gumrukai.com" } 
   }
 };
 

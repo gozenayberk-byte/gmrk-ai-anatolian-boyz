@@ -24,7 +24,7 @@ import {
   TrendingUp, ShieldCheck, Zap, Award, Check, X as XIcon, Globe, ArrowRight, Globe2, Store,
   Search, FileText, Hash, DollarSign, Mail, Package, ChevronDown, ChevronUp, HelpCircle, AlertCircle,
   BarChart3, Send, History, Briefcase, Star, Building2, Handshake, Server, Users, Menu, Sparkles, LayoutDashboard,
-  Smartphone, ScanLine, FileCheck, Coffee, Quote, Gift, CheckCircle2
+  Smartphone, ScanLine, FileCheck, Coffee, Quote, Gift, CheckCircle2, ThumbsUp, XCircle, MousePointer2
 } from 'lucide-react';
 
 // Varsayılan Paket Verileri
@@ -42,8 +42,8 @@ const INITIAL_PLANS: SubscriptionPlan[] = [
       "Basit Ürün Tanımlama",
       "Standart Destek"
     ],
-    cta: "Paketi Seç",
-    popular: false,
+    cta: "Hemen Başla",
+    popular: true,
     color: "slate"
   },
   {
@@ -62,7 +62,7 @@ const INITIAL_PLANS: SubscriptionPlan[] = [
       "Yapay Zeka Danışmanı",
     ],
     cta: "Planı Seç",
-    popular: true,
+    popular: false,
     color: "brand"
   },
   {
@@ -274,58 +274,69 @@ const App: React.FC = () => {
       setIsPricingModalOpen(false);
       setIsPaymentModalOpen(true);
   };
+
+  // Helper for scrolling to pricing
+  const scrollToPricing = () => {
+      const element = document.getElementById('pricing-section');
+      if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+      } else {
+          setIsPricingModalOpen(true);
+      }
+  };
   
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans relative flex flex-col">
+    <div className="min-h-screen bg-white text-slate-900 font-sans relative flex flex-col selection:bg-brand-100 selection:text-brand-900">
       {/* Navbar */}
-      <nav className="sticky top-0 z-[80] bg-white/90 border-b border-slate-200 shadow-sm backdrop-blur-md">
+      <nav className="sticky top-0 z-[80] bg-white/90 border-b border-slate-100 shadow-sm backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <button onClick={() => setAppState(AppState.IDLE)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="bg-brand-600 p-2 rounded-lg shadow-sm">
-                <Box className="w-5 h-5 text-white" />
+          <div className="flex justify-between h-20 items-center">
+            <button onClick={() => setAppState(AppState.IDLE)} className="flex items-center gap-2 hover:opacity-80 transition-opacity group">
+              <div className="bg-gradient-to-br from-brand-600 to-brand-800 p-2.5 rounded-xl shadow-lg shadow-brand-500/20 group-hover:shadow-brand-500/40 transition-shadow">
+                <Box className="w-6 h-6 text-white" />
               </div>
-              <span className="text-lg font-bold text-slate-900">GümrükAI</span>
+              <span className="text-2xl font-black text-slate-900 tracking-tight">GümrükAI</span>
             </button>
             
             {/* Desktop Menu */}
-            <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-              <button onClick={() => setAppState(AppState.IDLE)} className="hover:text-brand-600">Anasayfa</button>
+            <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+              <button onClick={() => setAppState(AppState.IDLE)} className="hover:text-brand-600 transition-colors">Anasayfa</button>
               
               {user && (
-                 <button onClick={handleGoToDashboard} className={`flex items-center gap-1 ${appState === AppState.DASHBOARD ? 'text-brand-600 font-bold' : 'hover:text-brand-600'}`}>
+                 <button onClick={handleGoToDashboard} className={`flex items-center gap-1.5 transition-colors ${appState === AppState.DASHBOARD ? 'text-brand-600 font-bold' : 'hover:text-brand-600'}`}>
                     <LayoutDashboard className="w-4 h-4" />
                     Panel
                  </button>
               )}
 
-              <button onClick={() => setIsPricingModalOpen(true)} className="hover:text-brand-600">Paketler</button>
+              <button onClick={scrollToPricing} className="hover:text-brand-600 transition-colors">Paketler</button>
               
               {user && user.role === 'admin' && (
                 <button onClick={() => setAppState(AppState.ADMIN)} className="text-brand-600">Yönetim</button>
               )}
               
               {user ? (
-                <div className="flex items-center gap-4 pl-4 border-l border-slate-200">
+                <div className="flex items-center gap-4 pl-6 border-l border-slate-200">
                   <div className="text-right hidden lg:block group relative cursor-pointer" onClick={handleGoToProfile}>
-                    <div className="text-slate-900 font-semibold text-xs">{user.name}</div>
-                    <div className="text-[10px] text-slate-500">{user.title}</div>
+                    <div className="text-slate-900 font-bold text-xs">{user.name}</div>
                     <div className={`text-[10px] font-bold mt-0.5 ${user.credits === 0 ? 'text-red-600' : 'text-green-600'}`}>
                        {user.credits === -1 ? 'Sınırsız Hak' : `${user.credits} Hak Kaldı`}
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-1">
-                     <button onClick={handleGoToProfile} className="p-2 text-slate-400 hover:text-brand-600 rounded-full hover:bg-slate-100 transition-colors" title="Profilim">
+                     <button onClick={handleGoToProfile} className="p-2 text-slate-400 hover:text-brand-600 rounded-full hover:bg-slate-50 transition-colors" title="Profilim">
                         <User className="w-5 h-5" />
                      </button>
-                     <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-600 rounded-full hover:bg-slate-100 transition-colors" title="Çıkış Yap">
+                     <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors" title="Çıkış Yap">
                         <LogOut className="w-5 h-5" />
                      </button>
                   </div>
                 </div>
               ) : (
-                <button onClick={() => setIsLoginModalOpen(true)} className="px-5 py-2 bg-slate-900 text-white rounded-full hover:bg-slate-800 text-xs font-bold uppercase tracking-wide transition-all">Giriş Yap</button>
+                <button onClick={() => setIsLoginModalOpen(true)} className="px-6 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 text-sm font-bold shadow-lg shadow-slate-900/20 transition-all hover:scale-105">
+                   Giriş Yap
+                </button>
               )}
             </div>
             
@@ -349,7 +360,7 @@ const App: React.FC = () => {
                  {user && (
                     <button onClick={() => {handleGoToDashboard(); setIsMobileMenuOpen(false)}} className="block w-full text-left py-2 font-medium text-slate-700">Panel</button>
                  )}
-                 <button onClick={() => {setIsPricingModalOpen(true); setIsMobileMenuOpen(false)}} className="block w-full text-left py-2 font-medium text-slate-700">Paketler</button>
+                 <button onClick={() => {scrollToPricing(); setIsMobileMenuOpen(false)}} className="block w-full text-left py-2 font-medium text-slate-700">Paketler</button>
                  {user ? (
                     <>
                        <button onClick={() => {handleGoToProfile(); setIsMobileMenuOpen(false)}} className="block w-full text-left py-2 font-medium text-brand-600">Profilim</button>
@@ -363,307 +374,438 @@ const App: React.FC = () => {
         )}
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-0 flex-1 w-full">
+      <main className="flex-1 w-full">
         {/* State Rendering Logic */}
         {appState === AppState.IDLE && (
-           // Landing Page Content
-           <div className="animate-in fade-in duration-700 space-y-24 md:space-y-32 pb-24">
+           // MICRO-SAAS LANDING PAGE (SALES FUNNEL MODE)
+           <div className="animate-in fade-in duration-700">
               
-              {/* SECTION 1: HERO & PROMO */}
-              <div className="flex flex-col items-center justify-center pt-8 text-center relative">
+              {/* MODÜL 1: HERO SECTION - The Hook */}
+              <section className="relative overflow-hidden pt-20 pb-32 lg:pt-32 lg:pb-40">
+                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-50 via-white to-white opacity-70"></div>
                  
-                 {siteContent.freeCreditsPromo?.isActive && (
-                    <div className="absolute -top-6 animate-bounce bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2">
-                       <Gift className="w-3 h-3" />
-                       {siteContent.freeCreditsPromo.title}: {siteContent.freeCreditsPromo.description}
+                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-bold mb-8 border border-blue-100 animate-bounce cursor-default">
+                        <Coffee className="w-4 h-4" />
+                        <span>{siteContent.hero.badge}</span>
                     </div>
-                 )}
+                    
+                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-slate-900 mb-8 tracking-tight leading-[1.1] max-w-5xl mx-auto">
+                        {siteContent.hero.titleLine1} <br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-indigo-600 relative inline-block">
+                          {siteContent.hero.titleLine2}
+                          <svg className="absolute w-full h-3 -bottom-2 left-0 text-brand-200/50 -z-10" viewBox="0 0 100 10" preserveAspectRatio="none">
+                              <path d="M0 5 Q 50 15 100 5" stroke="currentColor" strokeWidth="12" fill="none" />
+                          </svg>
+                        </span>
+                    </h1>
+                    
+                    <p className="text-xl md:text-2xl text-slate-500 mb-12 max-w-2xl mx-auto leading-relaxed font-light">
+                        {siteContent.hero.description}
+                    </p>
 
-                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 text-brand-600 text-xs font-bold uppercase tracking-widest mb-6">
-                    <Sparkles className="w-3 h-3" />
-                    {siteContent.hero.badge}
-                 </div>
-
-                 <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-6 tracking-tight leading-tight">
-                    {siteContent.hero.titleLine1} <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-brand-400">
-                       {siteContent.hero.titleLine2}
-                    </span>
-                 </h1>
-                 
-                 <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed">
-                    {siteContent.hero.description}
-                 </p>
-
-                 <div className="flex flex-col md:flex-row gap-4 items-center">
-                    <button 
-                       onClick={() => setIsLoginModalOpen(true)} 
-                       className="px-10 py-4 bg-brand-600 hover:bg-brand-700 text-white rounded-2xl font-bold text-lg shadow-xl shadow-brand-500/30 transition-all hover:scale-105 flex items-center gap-2"
-                    >
-                       Hemen Başla
-                       <ArrowRight className="w-5 h-5" />
-                    </button>
-                    <button 
-                       onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })}
-                       className="px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-2xl font-bold text-lg transition-all"
-                    >
-                       Nasıl Çalışır?
-                    </button>
-                 </div>
-                 
-                 {/* Demo Image Section */}
-                 <div className="mt-16 max-w-5xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 transform hover:scale-[1.01] transition-transform duration-500">
-                    <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                       <div className="flex gap-2">
-                          <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                          <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                          <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                       </div>
-                       <span className="text-xs font-mono text-slate-400">analysis_result_v2.json</span>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <button 
+                          onClick={() => setIsLoginModalOpen(true)} 
+                          className="w-full sm:w-auto px-10 py-5 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:bg-slate-800 transition-all hover:scale-105 shadow-2xl shadow-slate-900/30 flex items-center justify-center gap-3 group"
+                        >
+                          Ücretsiz Dene
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                        <button 
+                          onClick={scrollToPricing}
+                          className="w-full sm:w-auto px-10 py-5 bg-white text-slate-700 border border-slate-200 rounded-2xl font-bold text-lg hover:bg-slate-50 transition-all hover:border-slate-300 flex items-center justify-center gap-2"
+                        >
+                          Paketleri İncele
+                        </button>
                     </div>
-                    <div className="flex flex-col md:flex-row">
-                       <div className="w-full md:w-1/2 h-64 md:h-auto relative bg-slate-100 flex items-center justify-center">
-                          <img 
-                             src="https://ideacdn.net/idea/kc/80/myassets/products/244/yesil-fitilli-kadin-panduf-1.jpg?revision=1699965058" 
-                             alt="Demo Ürün" 
-                             className="max-h-full object-contain mix-blend-multiply"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end p-6">
-                             <div className="text-white">
-                                <div className="text-xs font-bold opacity-80 uppercase">Taranan Ürün</div>
-                                <div className="font-bold text-lg">Kadın Ev Botu (Panduf)</div>
-                             </div>
-                          </div>
-                       </div>
-                       <div className="w-full md:w-1/2 p-8 text-left space-y-6 bg-white">
-                          <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
-                             <div className="bg-green-100 p-2 rounded-lg">
-                                <CheckCircle2 className="w-6 h-6 text-green-600" />
-                             </div>
-                             <div>
-                                <div className="text-xs text-slate-500 font-bold uppercase">Tespit Edilen GTIP</div>
-                                <div className="text-2xl font-mono font-bold text-slate-900">6404.19.90.00.00</div>
-                             </div>
-                          </div>
+                    
+                    <div className="mt-8 flex items-center justify-center gap-6 text-sm font-medium text-slate-400">
+                        <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-green-500" /> Kredi Kartı Gerekmez</span>
+                        <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-green-500" /> Anında İptal</span>
+                    </div>
+                 </div>
+              </section>
+
+              {/* MODÜL 2: PRODUCT SCREENSHOT / DEMO (Pro Mode Visualization) */}
+              <section className="pb-32 -mt-20 relative z-20 px-4">
+                  <div className="max-w-6xl mx-auto">
+                      <div className="relative group">
+                          {/* Glow Effect */}
+                          <div className="absolute -inset-1 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
                           
-                          <div className="space-y-3">
-                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-500">Gümrük Vergisi</span>
-                                <span className="font-bold text-slate-900">%20</span>
-                             </div>
-                             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                <div className="bg-red-500 h-full w-[20%]"></div>
-                             </div>
-                             
-                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-500">İlave Gümrük Vergisi (İGV)</span>
-                                <span className="font-bold text-slate-900">%30</span>
-                             </div>
-                             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                <div className="bg-orange-500 h-full w-[30%]"></div>
-                             </div>
+                          {/* Browser Window Mockup */}
+                          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+                              <div className="bg-slate-100 px-4 py-3 border-b border-slate-200 flex items-center gap-4">
+                                  <div className="flex gap-1.5">
+                                      <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                                      <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                                      <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                                  </div>
+                                  <div className="flex-1 text-center">
+                                      <div className="bg-white px-4 py-1 rounded-md text-xs font-mono text-slate-400 border border-slate-200 shadow-sm inline-block w-64 truncate">
+                                          app.gumrukai.com/dashboard/results
+                                      </div>
+                                  </div>
+                              </div>
+                              
+                              {/* Fake UI Content - Represents Pro Plan Results */}
+                              <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 bg-slate-50/50">
+                                  {/* Left: Product Image & Basic Info */}
+                                  <div className="lg:col-span-1 space-y-6">
+                                      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                          <img src={siteContent.productDemo.imageUrl} alt="Demo Product" className="w-full h-48 object-cover rounded-lg mb-4" />
+                                          <h3 className="font-bold text-slate-900">Akıllı Robot Süpürge</h3>
+                                          <p className="text-xs text-slate-500 mt-1">Ev tipi temizlik robotu, lityum bataryalı.</p>
+                                      </div>
+                                      <div className="bg-blue-600 text-white p-4 rounded-xl shadow-lg shadow-blue-600/20">
+                                          <div className="text-xs font-bold opacity-80 mb-1">TESPİT EDİLEN GTIP</div>
+                                          <div className="text-2xl font-mono font-bold tracking-wider">8508.11.00.00.19</div>
+                                          <div className="flex items-center gap-1 mt-2 text-xs font-medium bg-blue-700/50 w-fit px-2 py-1 rounded">
+                                              <CheckCircle2 className="w-3 h-3" /> %99.8 Güven Skoru
+                                          </div>
+                                      </div>
+                                  </div>
 
-                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-500">KDV</span>
-                                <span className="font-bold text-slate-900">%10</span>
-                             </div>
-                             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                <div className="bg-blue-500 h-full w-[10%]"></div>
-                             </div>
-                          </div>
+                                  {/* Right: Detailed Analysis (Pro Features) */}
+                                  <div className="lg:col-span-2 space-y-6">
+                                      <div className="grid grid-cols-2 gap-4">
+                                          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                                              <div className="flex items-center gap-2 mb-2 text-red-600 font-bold text-sm">
+                                                  <DollarSign className="w-4 h-4" /> Toplam Vergi Yükü
+                                              </div>
+                                              <div className="text-3xl font-bold text-slate-900">%48.2</div>
+                                              <div className="text-xs text-slate-500 mt-1">KDV (%20) + Gümrük (%1.7) + ÖTV (%20)</div>
+                                          </div>
+                                          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                                              <div className="flex items-center gap-2 mb-2 text-amber-600 font-bold text-sm">
+                                                  <FileText className="w-4 h-4" /> Zorunlu Belge
+                                              </div>
+                                              <div className="text-xl font-bold text-slate-900">TAREKS + CE</div>
+                                              <div className="text-xs text-slate-500 mt-1">İthalat denetimine tabidir.</div>
+                                          </div>
+                                      </div>
 
-                          <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 flex gap-3">
-                             <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                             <div className="text-xs text-amber-800 leading-relaxed">
-                                <strong>Dikkat:</strong> TAREKS referansı ve CE belgesi zorunludur. Azo boyar testi istenebilir.
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-              </div>
+                                      {/* Pro Feature Highlight */}
+                                      <div className="bg-white p-6 rounded-xl border border-brand-200 shadow-sm relative overflow-hidden">
+                                          <div className="absolute top-0 right-0 bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">PRO</div>
+                                          <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                              <TrendingUp className="w-5 h-5 text-brand-600" /> Pazar Analizi
+                                          </h4>
+                                          <div className="flex items-center justify-between gap-8">
+                                              <div>
+                                                  <div className="text-xs text-slate-500 uppercase font-bold">Çin Alış (FOB)</div>
+                                                  <div className="text-2xl font-bold text-slate-900">$85 - $110</div>
+                                              </div>
+                                              <div className="h-10 w-px bg-slate-200"></div>
+                                              <div>
+                                                  <div className="text-xs text-slate-500 uppercase font-bold">Türkiye Satış</div>
+                                                  <div className="text-2xl font-bold text-slate-900">8.500 TL</div>
+                                              </div>
+                                              <div className="flex-1 text-right">
+                                                  <div className="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-lg font-bold text-sm">
+                                                      Yüksek Kar Marjı
+                                                  </div>
+                                              </div>
+                                          </div>
+                                      </div>
 
-              {/* SECTION 2: ROI (PROBLEM/SOLUTION) */}
-              <div className="bg-slate-900 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-24 text-white relative overflow-hidden">
-                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-600/20 rounded-full blur-[100px] -mr-32 -mt-32"></div>
-                 <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[100px] -ml-32 -mb-32"></div>
-                 
-                 <div className="max-w-7xl mx-auto relative z-10">
-                    <div className="text-center max-w-3xl mx-auto mb-16">
-                       <span className="text-brand-400 font-bold tracking-widest text-xs uppercase">{siteContent.roi.badge}</span>
-                       <h2 className="text-3xl md:text-5xl font-bold mt-4 mb-6">{siteContent.roi.title}</h2>
-                       <p className="text-slate-400 text-lg">{siteContent.roi.description}</p>
-                    </div>
+                                      <div className="bg-slate-800 text-slate-300 p-4 rounded-xl font-mono text-xs overflow-hidden opacity-80">
+                                          <div className="text-green-400 mb-2">// Yapay Zeka Mail Taslağı</div>
+                                          <p>Dear Supplier, I am interested in importing your Robot Vacuum Model X...</p>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </section>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                       <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-8 rounded-2xl hover:bg-white/10 transition-colors">
-                          <div className="text-4xl font-black text-red-500 mb-4">45dk</div>
-                          <p className="text-slate-300 font-medium">{siteContent.roi.comparison1}</p>
-                       </div>
-                       <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-8 rounded-2xl hover:bg-white/10 transition-colors">
-                          <div className="text-4xl font-black text-orange-500 mb-4">%200</div>
-                          <p className="text-slate-300 font-medium">{siteContent.roi.comparison2}</p>
-                       </div>
-                       <div className="bg-brand-600 p-8 rounded-2xl shadow-xl shadow-brand-600/20 transform scale-105">
-                          <div className="text-4xl font-black text-white mb-4">10sn</div>
-                          <p className="text-brand-100 font-bold">{siteContent.roi.comparison3}</p>
-                       </div>
-                    </div>
-                 </div>
-              </div>
+              {/* MODÜL 3: PAIN vs SOLUTION */}
+              <section className="py-24 bg-slate-50 border-t border-slate-200">
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                      <div className="text-center max-w-3xl mx-auto mb-16">
+                          <h2 className="text-3xl font-bold text-slate-900 mb-4">{siteContent.painPoints.title}</h2>
+                          <p className="text-lg text-slate-500">{siteContent.painPoints.subtitle}</p>
+                      </div>
 
-              {/* SECTION 3: FEATURES (PRO) */}
-              <div className="max-w-7xl mx-auto">
-                 <div className="flex flex-col md:flex-row items-center gap-12">
-                    <div className="w-full md:w-1/2 space-y-8">
-                       <div className="inline-block px-4 py-1.5 bg-indigo-100 text-indigo-700 rounded-full font-bold text-xs uppercase tracking-wide">
-                          {siteContent.proSection.badge}
-                       </div>
-                       <h2 className="text-4xl font-bold text-slate-900 leading-tight">
-                          {siteContent.proSection.title}
-                       </h2>
-                       <p className="text-lg text-slate-600 leading-relaxed">
-                          {siteContent.proSection.description}
-                       </p>
-                       
-                       <div className="space-y-6">
-                          <div className="flex gap-4">
-                             <div className="bg-green-100 p-3 rounded-xl h-fit">
-                                <TrendingUp className="w-6 h-6 text-green-600" />
-                             </div>
-                             <div>
-                                <h4 className="font-bold text-slate-900 text-lg">Karlılık Analizi</h4>
-                                <p className="text-slate-500 mt-1">Vergiler dahil net maliyetini ve Türkiye pazarındaki potansiyel kar marjını gör.</p>
-                             </div>
-                          </div>
-                          <div className="flex gap-4">
-                             <div className="bg-blue-100 p-3 rounded-xl h-fit">
-                                <Mail className="w-6 h-6 text-blue-600" />
-                             </div>
-                             <div>
-                                <h4 className="font-bold text-slate-900 text-lg">Otomatik RFQ</h4>
-                                <p className="text-slate-500 mt-1">Çinli tedarikçilere göndermek üzere profesyonel İngilizce fiyat teklifi maili hazırla.</p>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-                    <div className="w-full md:w-1/2">
-                       <div className="bg-gradient-to-br from-indigo-50 to-white p-8 rounded-3xl border border-indigo-100 shadow-lg relative">
-                          <div className="absolute top-4 right-4 bg-white p-2 rounded-lg shadow-sm">
-                             <TrendingUp className="w-6 h-6 text-green-500" />
-                          </div>
-                          <div className="space-y-6">
-                             {/* Mock UI Elements */}
-                             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                                <div className="text-xs text-slate-400 font-bold uppercase mb-2">Çin Tedarik Fiyatı</div>
-                                <div className="flex justify-between items-end">
-                                   <div className="text-2xl font-bold text-slate-900">$5.40 - $6.20</div>
-                                   <div className="text-xs text-green-600 font-bold bg-green-50 px-2 py-1 rounded">Düşük Risk</div>
-                                </div>
-                             </div>
-                             <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm opacity-80">
-                                <div className="text-xs text-slate-400 font-bold uppercase mb-2">Türkiye Satış Fiyatı</div>
-                                <div className="flex justify-between items-end">
-                                   <div className="text-2xl font-bold text-slate-900">450 ₺ - 520 ₺</div>
-                                   <div className="text-xs text-slate-400">Trendyol, Hepsiburada</div>
-                                </div>
-                             </div>
-                             <div className="bg-indigo-600 text-white p-4 rounded-xl shadow-md">
-                                <div className="font-bold text-sm mb-1">Tahmini Net Kar</div>
-                                <div className="text-3xl font-black">%145</div>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-              </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                          {siteContent.painPoints.items.map((item, idx) => (
+                              <div key={idx} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                                  <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center mb-6">
+                                      {item.icon === 'clock' && <Clock className="w-8 h-8 text-red-500" />}
+                                      {item.icon === 'money' && <DollarSign className="w-8 h-8 text-red-500" />}
+                                      {item.icon === 'error' && <AlertTriangle className="w-8 h-8 text-red-500" />}
+                                  </div>
+                                  <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
+                                  <p className="text-slate-600 leading-relaxed">
+                                      {item.desc}
+                                  </p>
+                              </div>
+                          ))}
+                      </div>
 
-              {/* SECTION 4: CORPORATE */}
-              <div className="bg-slate-50 rounded-3xl p-8 md:p-16 border border-slate-200 text-center">
-                 <div className="max-w-3xl mx-auto space-y-6">
-                    <Building2 className="w-12 h-12 text-slate-400 mx-auto" />
-                    <h2 className="text-3xl font-bold text-slate-900">{siteContent.corporate.title}</h2>
-                    <p className="text-slate-600 text-lg">{siteContent.corporate.description}</p>
-                    <div className="pt-4">
-                       <button onClick={() => window.open('mailto:corporate@gumrukai.com')} className="px-8 py-3 bg-white border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-colors">
-                          Kurumsal İletişime Geç
-                       </button>
-                    </div>
-                 </div>
-              </div>
-
-              {/* SECTION 5: TESTIMONIALS */}
-              <div className="max-w-7xl mx-auto">
-                 <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">Kullanıcılarımız Ne Diyor?</h2>
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {siteContent.testimonials.map((t) => (
-                       <div key={t.id} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative">
-                          <Quote className="w-8 h-8 text-brand-100 absolute top-6 right-6" />
-                          <div className="flex items-center gap-1 mb-4">
-                             {[...Array(5)].map((_, i) => (
-                                <Star key={i} className={`w-4 h-4 ${i < t.rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-200'}`} />
-                             ))}
+                      {/* The Solution Connector */}
+                      <div className="flex justify-center my-12">
+                          <div className="bg-white border border-slate-200 rounded-full p-2 shadow-sm animate-bounce">
+                              <ArrowRight className="w-6 h-6 text-slate-400 rotate-90" />
                           </div>
-                          <p className="text-slate-600 mb-6 leading-relaxed">"{t.comment}"</p>
-                          <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold">
-                                {t.avatarInitial}
-                             </div>
-                             <div>
-                                <div className="font-bold text-slate-900 text-sm">{t.name}</div>
-                                <div className="text-xs text-slate-500">{t.role}</div>
-                             </div>
-                          </div>
-                       </div>
-                    ))}
-                 </div>
-              </div>
+                      </div>
 
-              {/* SECTION 6: FAQ */}
-              <div className="max-w-3xl mx-auto">
-                 <div className="text-center mb-12">
-                    <h2 className="text-3xl font-bold text-slate-900">{siteContent.faq.title}</h2>
-                    <p className="text-slate-500 mt-2">{siteContent.faq.subtitle}</p>
-                 </div>
-                 <div className="space-y-4">
-                    {siteContent.faq.items.map((item, idx) => (
-                       <div key={idx} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                          <button 
-                             onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
-                             className="w-full px-6 py-4 text-left flex justify-between items-center hover:bg-slate-50 transition-colors"
-                          >
-                             <span className="font-bold text-slate-800">{item.question}</span>
-                             {openFaqIndex === idx ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                      <div className="bg-brand-600 rounded-3xl p-8 md:p-12 text-white shadow-2xl shadow-brand-600/30 text-center relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                          <h3 className="text-3xl font-bold mb-6 relative z-10">Çözüm: GümrükAI ile 10 Saniyede Sonuç</h3>
+                          <p className="text-brand-100 text-lg max-w-2xl mx-auto mb-8 relative z-10">
+                              Yapay zeka teknolojimiz mevzuatı saniyesinde tarar, hatasız GTIP tespiti yapar ve tüm maliyetleri önüne serer. Beklemek yok, sürpriz maliyet yok.
+                          </p>
+                          <button onClick={() => setIsLoginModalOpen(true)} className="bg-white text-brand-700 px-8 py-3 rounded-xl font-bold hover:bg-brand-50 transition-colors relative z-10">
+                              Hemen Çözüme Ulaş
                           </button>
-                          {openFaqIndex === idx && (
-                             <div className="px-6 pb-6 pt-2 text-slate-600 leading-relaxed text-sm bg-slate-50/50">
-                                {item.answer}
-                             </div>
-                          )}
-                       </div>
-                    ))}
-                 </div>
-              </div>
+                      </div>
+                  </div>
+              </section>
 
-              {/* FINAL CTA */}
-              <div className="bg-brand-600 rounded-3xl p-12 text-center text-white relative overflow-hidden">
-                 <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/20 to-transparent"></div>
-                 <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-                    <h2 className="text-3xl md:text-4xl font-black">İthalata 1-0 Önde Başlayın</h2>
-                    <p className="text-brand-100 text-lg">Risk almayın, yapay zeka ile analiz edin. Hemen ücretsiz hesabınızı oluşturun.</p>
-                    <button onClick={() => setIsLoginModalOpen(true)} className="px-10 py-4 bg-white text-brand-700 rounded-2xl font-bold text-lg hover:bg-brand-50 transition-colors shadow-xl">
-                       Ücretsiz Dene
-                    </button>
-                    <p className="text-xs text-brand-200 opacity-80 mt-4">Kredi kartı gerekmez. 50 Sorgu hediye.</p>
-                 </div>
-              </div>
+              {/* MODÜL 4: COST COMPARISON (2 Coffees) */}
+              <section className="py-24 bg-white">
+                  <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                          <div>
+                              <div className="inline-block bg-brand-100 text-brand-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide mb-6">
+                                  {siteContent.roi.badge}
+                              </div>
+                              <h2 className="text-4xl font-black text-slate-900 mb-6 leading-tight">
+                                  {siteContent.roi.title}
+                              </h2>
+                              <p className="text-lg text-slate-500 mb-8">
+                                  {siteContent.roi.description}
+                              </p>
+                              <ul className="space-y-4">
+                                  <li className="flex items-center gap-3">
+                                      <XCircle className="w-6 h-6 text-red-500 flex-shrink-0" />
+                                      <span className="text-slate-600 font-medium line-through decoration-red-500/50">{siteContent.roi.comparison1}</span>
+                                  </li>
+                                  <li className="flex items-center gap-3">
+                                      <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0" />
+                                      <span className="text-slate-900 font-bold">{siteContent.roi.comparison2}</span>
+                                  </li>
+                                  <li className="flex items-center gap-3">
+                                      <TrendingUp className="w-6 h-6 text-brand-500 flex-shrink-0" />
+                                      <span className="text-brand-700 font-bold">{siteContent.roi.comparison3}</span>
+                                  </li>
+                              </ul>
+                          </div>
+                          <div className="relative">
+                               <div className="absolute inset-0 bg-gradient-to-tr from-brand-100 to-indigo-50 rounded-full blur-3xl opacity-60"></div>
+                               <div className="relative bg-white border border-slate-200 rounded-3xl p-8 shadow-xl text-center">
+                                   <div className="text-slate-400 text-sm font-bold uppercase mb-4">AYLIK MALİYET</div>
+                                   <div className="flex justify-center items-end gap-8 mb-8">
+                                       <div className="text-center opacity-40 grayscale">
+                                           <div className="text-5xl mb-2">🧑‍💼</div>
+                                           <div className="text-xl font-bold line-through">5.000₺</div>
+                                           <div className="text-xs">Müşavir</div>
+                                       </div>
+                                       <div className="text-center transform scale-125">
+                                           <div className="text-6xl mb-2">☕️☕️</div>
+                                           <div className="text-3xl font-black text-brand-600">399₺</div>
+                                           <div className="text-sm font-bold text-brand-700">GümrükAI</div>
+                                       </div>
+                                   </div>
+                                   <button onClick={scrollToPricing} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">
+                                       Tasarrufa Başla
+                                   </button>
+                               </div>
+                          </div>
+                      </div>
+                  </div>
+              </section>
 
+              {/* MODÜL 5: VERIFICATION PROMO (The Hook) */}
+              <section className="py-20 bg-slate-900 text-white relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                  <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
+                      <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-yellow-400/50 animate-pulse">
+                          <Gift className="w-8 h-8 text-slate-900" />
+                      </div>
+                      <h2 className="text-3xl md:text-5xl font-black mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-500">
+                          {siteContent.freeCreditsPromo.title}
+                      </h2>
+                      <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
+                          {siteContent.freeCreditsPromo.description}
+                      </p>
+                      <button 
+                          onClick={() => setIsLoginModalOpen(true)}
+                          className="px-12 py-4 bg-yellow-400 text-slate-900 rounded-full font-black text-lg hover:bg-yellow-300 transition-all hover:scale-105 shadow-xl"
+                      >
+                          Doğrula & 2 Kredi Kazan
+                      </button>
+                      <p className="mt-6 text-sm text-slate-500">
+                          *Kredi kartı gerekmez. Sadece telefon ve mail doğrulaması.
+                      </p>
+                  </div>
+              </section>
+
+              {/* MODÜL 6 & 7: PLANS (Detailed) */}
+              <section id="pricing-section" className="py-24 bg-slate-50">
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                      <div className="text-center mb-16">
+                          <h2 className="text-3xl font-bold text-slate-900">İhtiyacına Uygun Paketi Seç</h2>
+                          <p className="text-slate-500 mt-2">İster yeni başlıyor ol, ister profesyonel.</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                          {/* Entrepreneur Plan */}
+                          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:border-brand-300 transition-all relative overflow-hidden group">
+                              <div className="absolute top-0 right-0 bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-bl-xl">BAŞLANGIÇ</div>
+                              <div className="flex items-center gap-4 mb-6">
+                                  <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-600">
+                                      <Zap className="w-6 h-6" />
+                                  </div>
+                                  <div>
+                                      <h3 className="text-xl font-bold text-slate-900">Girişimci Paketi</h3>
+                                      <p className="text-sm text-slate-500">Yeni başlayanlar için ideal.</p>
+                                  </div>
+                              </div>
+                              <div className="flex items-baseline gap-1 mb-8">
+                                  <span className="text-4xl font-black text-slate-900">399 ₺</span>
+                                  <span className="text-slate-500">/ ay</span>
+                              </div>
+                              <p className="text-slate-600 mb-8 min-h-[3rem]">
+                                  Ayda 50 ürüne kadar GTIP ve vergi tespiti yapın. Basit ve hızlı.
+                              </p>
+                              <button onClick={() => setIsPricingModalOpen(true)} className="w-full py-3 bg-slate-100 text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-colors mb-8">
+                                  Paketi Seç
+                              </button>
+                              <ul className="space-y-3">
+                                  <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-green-500" /> 50 Sorgu Hakkı</li>
+                                  <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-green-500" /> GTIP Tespiti</li>
+                                  <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-green-500" /> Vergi Hesaplama</li>
+                              </ul>
+                          </div>
+
+                          {/* Professional Plan */}
+                          <div className="bg-white rounded-3xl p-8 border-2 border-brand-500 shadow-xl shadow-brand-500/10 relative overflow-hidden transform md:-translate-y-4">
+                              <div className="absolute top-0 left-0 w-full h-1 bg-brand-500"></div>
+                              <div className="absolute top-0 right-0 bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">POPÜLER</div>
+                              <div className="flex items-center gap-4 mb-6">
+                                  <div className="w-12 h-12 bg-brand-100 rounded-2xl flex items-center justify-center text-brand-600">
+                                      <Star className="w-6 h-6" />
+                                  </div>
+                                  <div>
+                                      <h3 className="text-xl font-bold text-slate-900">Profesyonel Paket</h3>
+                                      <p className="text-sm text-slate-500">Ticaret yapanlar için tam güç.</p>
+                                  </div>
+                              </div>
+                              <div className="flex items-baseline gap-1 mb-8">
+                                  <span className="text-4xl font-black text-brand-600">2.499 ₺</span>
+                                  <span className="text-slate-500">/ ay</span>
+                              </div>
+                              <p className="text-slate-600 mb-8 min-h-[3rem]">
+                                  Sınırsız sorgu, Çin fiyat analizi ve tedarikçi mail taslaklarıyla işinizi büyütün.
+                              </p>
+                              <button onClick={() => setIsPricingModalOpen(true)} className="w-full py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/20 mb-8">
+                                  Hemen Başla
+                              </button>
+                              <ul className="space-y-3">
+                                  <li className="flex items-center gap-3 text-sm text-slate-900 font-bold"><Check className="w-5 h-5 text-brand-500" /> Sınırsız Sorgu</li>
+                                  <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-brand-500" /> Çin & TR Fiyat Analizi</li>
+                                  <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-brand-500" /> Tedarikçi Mail Taslakları</li>
+                                  <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-brand-500" /> Geçmiş Arşivi</li>
+                              </ul>
+                          </div>
+                      </div>
+                  </div>
+              </section>
+
+              {/* MODÜL 8: SOCIAL PROOF (10 Testimonials) */}
+              <section className="py-24 bg-white border-t border-slate-100">
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                      <div className="text-center mb-16">
+                          <h2 className="text-3xl font-bold text-slate-900">Binlerce Mutlu İthalatçı</h2>
+                          <p className="text-slate-500 mt-2">GümrükAI kullananlar zamandan ve paradan nasıl tasarruf etti?</p>
+                      </div>
+                      
+                      {/* Grid Layout for Testimonials */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr">
+                          {siteContent.testimonials.map((t) => (
+                              <div key={t.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-brand-200 hover:shadow-md transition-all flex flex-col">
+                                  <div className="flex items-center gap-3 mb-4">
+                                      <div className="w-10 h-10 bg-gradient-to-br from-slate-700 to-slate-900 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                          {t.avatarInitial}
+                                      </div>
+                                      <div>
+                                          <div className="font-bold text-slate-900 text-sm">{t.name}</div>
+                                          <div className="text-xs text-slate-500">{t.role}</div>
+                                      </div>
+                                  </div>
+                                  <div className="flex mb-3">
+                                      {[...Array(5)].map((_, i) => (
+                                          <Star key={i} className={`w-3 h-3 ${i < t.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
+                                      ))}
+                                  </div>
+                                  <p className="text-slate-600 text-xs leading-relaxed flex-1 italic relative">
+                                      <Quote className="w-4 h-4 text-slate-300 absolute -top-1 -left-1 transform -scale-x-100 opacity-50" />
+                                      <span className="ml-4">{t.comment}</span>
+                                  </p>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              </section>
+
+              {/* MODÜL 9: FAQ */}
+              <section className="py-24 bg-slate-50">
+                  <div className="max-w-3xl mx-auto px-4">
+                      <div className="text-center mb-12">
+                          <h2 className="text-3xl font-bold text-slate-900">{siteContent.faq.title}</h2>
+                          <p className="text-slate-500">{siteContent.faq.subtitle}</p>
+                      </div>
+                      <div className="space-y-4">
+                          {siteContent.faq.items.map((item, idx) => (
+                              <div key={idx} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                                  <button 
+                                      onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
+                                      className="w-full px-6 py-4 text-left flex justify-between items-center font-bold text-slate-800 hover:bg-slate-50 transition-colors"
+                                  >
+                                      {item.question}
+                                      {openFaqIndex === idx ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                                  </button>
+                                  {openFaqIndex === idx && (
+                                      <div className="px-6 pb-6 pt-2 text-slate-600 text-sm leading-relaxed border-t border-slate-100">
+                                          {item.answer}
+                                      </div>
+                                  )}
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              </section>
+
+              {/* MODÜL 10: FINAL CTA */}
+              <section className="py-24 bg-white border-t border-slate-100">
+                  <div className="max-w-5xl mx-auto px-4 text-center">
+                      <div className="bg-gradient-to-br from-brand-600 to-indigo-700 rounded-3xl p-12 md:p-20 text-white shadow-2xl relative overflow-hidden">
+                          <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
+                          <div className="relative z-10">
+                              <h2 className="text-3xl md:text-5xl font-black mb-6">İthalat Yapmak Hiç Bu Kadar Kolay Olmamıştı</h2>
+                              <p className="text-xl text-brand-100 mb-10 max-w-2xl mx-auto">
+                                  Risk alma, para kaybetme. GümrükAI ile işini sağlama al.
+                              </p>
+                              <button 
+                                  onClick={() => setIsLoginModalOpen(true)}
+                                  className="px-12 py-5 bg-white text-brand-700 rounded-2xl font-black text-lg hover:bg-brand-50 transition-all hover:scale-105 shadow-xl"
+                              >
+                                  Şimdi Ücretsiz Başla
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </section>
            </div>
         )}
 
         {appState === AppState.DASHBOARD && user && (
            <div className="animate-in fade-in duration-500 pb-20">
-              <div className="mb-10 text-center">
+              <div className="mb-10 text-center pt-8">
                  <h1 className="text-3xl font-bold text-slate-900 mb-2">Yeni Gümrük Analizi</h1>
                  <p className="text-slate-500">Ürün görselini yükleyin, yapay zeka GTIP ve vergileri hesaplasın.</p>
               </div>
@@ -733,7 +875,7 @@ const App: React.FC = () => {
       </main>
 
       {/* Footer, Modals ... */}
-      <Footer content={siteContent.footer} onHomeClick={handleGoHome} onHistoryClick={handleHistoryClick} onPricingClick={() => setIsPricingModalOpen(true)} onOpenPrivacy={() => setActiveLegalModal('privacy')} onOpenTerms={() => setActiveLegalModal('terms')} onOpenContact={() => setActiveLegalModal('contact')} onOpenUpdates={() => setIsUpdatesModalOpen(true)} />
+      <Footer content={siteContent.footer} onHomeClick={handleGoHome} onHistoryClick={handleHistoryClick} onPricingClick={scrollToPricing} onOpenPrivacy={() => setActiveLegalModal('privacy')} onOpenTerms={() => setActiveLegalModal('terms')} onOpenContact={() => setActiveLegalModal('contact')} onOpenUpdates={() => setIsUpdatesModalOpen(true)} />
       
       {/* Login Modal */}
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} onLogin={handleLoginSubmitInModal} />
