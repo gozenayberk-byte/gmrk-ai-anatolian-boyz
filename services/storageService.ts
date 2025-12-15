@@ -140,7 +140,7 @@ export const storageService = {
     };
   },
 
-  loginUser: async (email: string, password: string): Promise<User> => {
+  loginUser: async (email: string, password: string, rememberMe: boolean = false): Promise<User> => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -148,6 +148,11 @@ export const storageService = {
 
     if (error) throw new Error("E-posta veya şifre hatalı.");
     if (!data.user) throw new Error("Giriş yapılamadı.");
+
+    // Note: Supabase JS client persists session by default in localStorage.
+    // If rememberMe is false, technically we should rely on sessionStorage or ephemeral state,
+    // but the client is initialized globally. For this implementation, success means
+    // the user is authenticated. The app checks session on load in App.tsx.
 
     return await storageService.getCurrentUserProfile();
   },

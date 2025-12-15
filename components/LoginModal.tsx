@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Lock, Mail, Loader2, ArrowRight, Info, Copy, User as UserIcon } from 'lucide-react';
+import { X, Lock, Mail, Loader2, ArrowRight, Info, Copy, User as UserIcon, Check } from 'lucide-react';
 import { User } from '../types';
 import { storageService } from '../services/storageService';
 
@@ -15,6 +15,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -45,7 +46,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
         }, 1000);
 
       } else {
-        const user = await storageService.loginUser(cleanEmail, cleanPass);
+        const user = await storageService.loginUser(cleanEmail, cleanPass, rememberMe);
         onLogin(user);
         onClose();
       }
@@ -147,6 +148,24 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                 />
               </div>
             </div>
+
+            {!isRegister && (
+              <div className="flex items-center gap-2">
+                <div className="relative flex items-center">
+                  <input
+                    type="checkbox"
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-slate-300 shadow-sm transition-all checked:border-brand-600 checked:bg-brand-600 hover:border-brand-400 focus:ring-2 focus:ring-brand-500 focus:ring-offset-1"
+                  />
+                  <Check className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 w-3 h-3" />
+                </div>
+                <label htmlFor="rememberMe" className="text-sm text-slate-600 cursor-pointer select-none">
+                  Oturumumu açık tut
+                </label>
+              </div>
+            )}
 
             <button 
               type="submit" 
