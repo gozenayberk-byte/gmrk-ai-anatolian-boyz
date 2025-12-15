@@ -102,21 +102,28 @@ const FALLBACK_CONTENT: SiteContent = {
 export const storageService = {
   
   // --- AUTHENTICATION ---
-  // (Kimlik doğrulama fonksiyonları aynı kaldı)
+  
   registerUser: async (name: string, email: string, password: string): Promise<User> => {
+    // Demo/Test hesapları için LocalStorage kullanımı
     if (email.endsWith('@test.com') || email === 'demo@gumrukai.com') {
       const mockUser: User = { email, name: name || 'Test Kullanıcısı', title: 'Misafir Üye', role: 'user', planId: 'free', credits: 5, subscriptionStatus: 'active', isEmailVerified: true, isPhoneVerified: true };
       localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockUser));
       return mockUser;
     }
+    
+    // Gerçek Supabase Kaydı
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
     if (error) throw new Error(error.message);
     if (!data.user) throw new Error("Kullanıcı oluşturulamadı.");
+    
+    // Admin email kontrolü (Hardcoded güvenlik önlemi - opsiyonel)
     if (email === 'admin@admin.com') return { email: data.user.email!, name: name || 'Süper Admin', title: 'Sistem Yöneticisi', role: 'admin', planId: '3', credits: -1, subscriptionStatus: 'active', isEmailVerified: true, isPhoneVerified: true };
+    
     return { email: data.user.email!, name: name, title: 'Misafir Üye', role: 'user', planId: 'free', credits: 0, subscriptionStatus: 'active', isEmailVerified: false, isPhoneVerified: false };
   },
 
   loginUser: async (email: string, password: string, rememberMe: boolean = false): Promise<User> => {
+    // 1. Hardcoded Demo Hesaplar (Geliştirme Amaçlı)
     if (email === 'admin@admin.com' && password === 'admin') {
         const mockAdmin: User = { email: 'admin@admin.com', name: 'Süper Admin', title: 'Sistem Yöneticisi', role: 'admin', planId: '3', credits: -1, subscriptionStatus: 'active', isEmailVerified: true, isPhoneVerified: true };
         localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockAdmin));
@@ -127,32 +134,78 @@ export const storageService = {
         localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockUser));
         await new Promise(r => setTimeout(r, 600)); return mockUser;
     }
+
+    // 2. Gerçek Supabase Girişi
     try {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) { console.error("Supabase Login Error:", error); throw new Error(error.message); }
         if (!data.user) throw new Error("Giriş yapılamadı. Kullanıcı bulunamadı.");
+        
+        // Gerçek giriş başarılıysa, önceki mock session'ı temizle (Çakışmayı önle)
+        localStorage.removeItem(MOCK_SESSION_KEY);
+        
         return await storageService.getCurrentUserProfile();
     } catch (e: any) { throw e; }
   },
 
-  logoutUser: async () => { localStorage.removeItem(MOCK_SESSION_KEY); await supabase.auth.signOut(); },
-
-  getCurrentUserProfile: async (): Promise<User> => {
-    const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-    if (mockSessionStr) return JSON.parse(mockSessionStr);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Oturum açılmamış.");
-    if (user.email === 'admin@admin.com') return { email: user.email!, name: user.user_metadata.full_name || 'Süper Admin', title: 'Sistem Yöneticisi', role: 'admin', planId: '3', credits: -1, subscriptionStatus: 'active', isEmailVerified: true, isPhoneVerified: true };
-    const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    if (error || !profile) return { email: user.email!, name: user.user_metadata.full_name || 'Kullanıcı', title: 'Misafir Üye', role: 'user', planId: 'free', credits: 0, subscriptionStatus: 'active', isEmailVerified: !!user.email_confirmed_at, isPhoneVerified: !!user.phone_confirmed_at };
-    let discount = undefined;
-    if (profile.discount_active) discount = { isActive: profile.discount_active, rate: profile.discount_rate || 0, endDate: profile.discount_end_date || '' };
-    return { email: profile.email, name: profile.full_name, title: profile.title, role: profile.role || 'user', planId: profile.plan_id || 'free', credits: profile.credits, subscriptionStatus: profile.subscription_status, isEmailVerified: profile.is_email_verified, isPhoneVerified: profile.is_phone_verified, phoneNumber: profile.phone_number, discount: discount };
+  logoutUser: async () => { 
+      localStorage.removeItem(MOCK_SESSION_KEY); 
+      await supabase.auth.signOut(); 
   },
 
-  saveToHistory: async (userEmail: string, analysis: CustomsAnalysis): Promise<HistoryItem> => {
+  getCurrentUserProfile: async (): Promise<User> => {
+    // ÖNCELİK DEĞİŞİKLİĞİ: Önce Supabase'i kontrol et, sonra Mock'a bak.
+    // Bu sayede gerçek kullanıcı verisi her zaman local test verisine baskın gelir.
+
+    // 1. Supabase Session Kontrolü
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+        // Gerçek kullanıcı bulunduysa, mock veriyi temizle
+        localStorage.removeItem(MOCK_SESSION_KEY);
+
+        if (user.email === 'admin@admin.com') return { email: user.email!, name: user.user_metadata.full_name || 'Süper Admin', title: 'Sistem Yöneticisi', role: 'admin', planId: '3', credits: -1, subscriptionStatus: 'active', isEmailVerified: true, isPhoneVerified: true };
+        
+        // Veritabanından en güncel profil verisini çek (role: 'admin' burada geliyor)
+        const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        
+        // Profil yoksa fallback oluştur (Hata durumunda)
+        if (error || !profile) return { email: user.email!, name: user.user_metadata.full_name || 'Kullanıcı', title: 'Misafir Üye', role: 'user', planId: 'free', credits: 0, subscriptionStatus: 'active', isEmailVerified: !!user.email_confirmed_at, isPhoneVerified: !!user.phone_confirmed_at };
+        
+        let discount = undefined;
+        if (profile.discount_active) discount = { isActive: profile.discount_active, rate: profile.discount_rate || 0, endDate: profile.discount_end_date || '' };
+        
+        return { 
+            email: profile.email, 
+            name: profile.full_name, 
+            title: profile.title, 
+            role: profile.role || 'user', // Veritabanındaki rolü kullan
+            planId: profile.plan_id || 'free', // Veritabanındaki planı kullan
+            credits: profile.credits, 
+            subscriptionStatus: profile.subscription_status, 
+            isEmailVerified: profile.is_email_verified, 
+            isPhoneVerified: profile.is_phone_verified, 
+            phoneNumber: profile.phone_number, 
+            discount: discount 
+        };
+    }
+
+    // 2. Mock Session Kontrolü (Sadece Supabase oturumu yoksa)
     const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-    if (mockSessionStr) {
+    if (mockSessionStr) return JSON.parse(mockSessionStr);
+
+    throw new Error("Oturum açılmamış.");
+  },
+
+  // --- ANALYSIS & HISTORY ---
+
+  saveToHistory: async (userEmail: string, analysis: CustomsAnalysis): Promise<HistoryItem> => {
+    // Mock modunda mıyız?
+    const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+    // Sadece Supabase oturumu YOKSA mock'a kaydet
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (mockSessionStr && !user) {
        const newItem: HistoryItem = { ...analysis, id: `mock-${Date.now()}`, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now() };
        const mockHistoryKey = `${MOCK_HISTORY_PREFIX}${userEmail}`;
        const currentHistory = JSON.parse(localStorage.getItem(mockHistoryKey) || '[]');
@@ -160,12 +213,17 @@ export const storageService = {
        localStorage.setItem(mockHistoryKey, JSON.stringify(updatedHistory));
        return newItem;
     }
-    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) throw new Error("Kullanıcı oturumu yok.");
+    
+    // Kredi düşme işlemi (Admin değilse)
     if (userEmail !== 'admin@admin.com') {
         const currentProfile = await storageService.getCurrentUserProfile();
-        if (currentProfile.credits > 0) await supabase.from('profiles').update({ credits: currentProfile.credits - 1 }).eq('id', user.id);
+        if (currentProfile.role !== 'admin' && currentProfile.credits > 0) {
+            await supabase.from('profiles').update({ credits: currentProfile.credits - 1 }).eq('id', user.id);
+        }
     }
+
     const newItem = { user_id: user.id, product_name: analysis.productName, description: analysis.description, hs_code: analysis.hsCode, hs_code_description: analysis.hsCodeDescription, taxes: analysis.taxes, documents: analysis.documents, import_price: analysis.importPrice, retail_price: analysis.retailPrice, email_draft: analysis.emailDraft, confidence_score: analysis.confidenceScore };
     const { data, error } = await supabase.from('analysis_history').insert(newItem).select().single();
     if (error) { console.error("Save error:", error); throw new Error("Geçmişe kaydedilemedi. (Veritabanı tablosu 'analysis_history' mevcut mu?)"); }
@@ -173,10 +231,15 @@ export const storageService = {
   },
 
   getUserHistory: async (userEmail: string): Promise<HistoryItem[]> => {
-    const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-    if (mockSessionStr) { const mockHistoryKey = `${MOCK_HISTORY_PREFIX}${userEmail}`; return JSON.parse(localStorage.getItem(mockHistoryKey) || '[]'); }
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    
+    // Mock Data Fallback (Sadece kullanıcı yoksa)
+    if (!user) {
+        const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+        if (mockSessionStr) { const mockHistoryKey = `${MOCK_HISTORY_PREFIX}${userEmail}`; return JSON.parse(localStorage.getItem(mockHistoryKey) || '[]'); }
+        return [];
+    }
+
     const { data, error } = await supabase.from('analysis_history').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
     if (error) return [];
     return data.map((item: any) => ({ productName: item.product_name, description: item.description, hsCode: item.hs_code, hsCodeDescription: item.hs_code_description || '', taxes: item.taxes || [], documents: item.documents || [], importPrice: item.import_price, retailPrice: item.retail_price, emailDraft: item.email_draft || "", confidenceScore: item.confidence_score || 90, id: item.id, date: new Date(item.created_at).toLocaleDateString('tr-TR'), timestamp: new Date(item.created_at).getTime() }));
@@ -193,6 +256,8 @@ export const storageService = {
     await supabase.from('analysis_history').delete().eq('id', id);
   },
 
+  // --- CONTENT & CONFIG ---
+
   getSiteContent: (): SiteContent => { return FALLBACK_CONTENT; },
   
   fetchSiteContent: async (): Promise<SiteContent> => {
@@ -204,37 +269,60 @@ export const storageService = {
   },
 
   saveSiteContent: async (content: SiteContent) => {
-    if (localStorage.getItem(MOCK_SESSION_KEY)) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return; // Sadece giriş yapmış kullanıcılar kaydedebilir (RLS policy kontrol edecek)
+    
     const { error } = await supabase.from('site_config').upsert({ id: 1, content });
     if (error) console.error("Content save error:", error);
   },
 
+  // --- USER MANAGEMENT & BILLING ---
+
   updateUserSubscription: async (plan: SubscriptionPlan, targetUserEmail?: string): Promise<User> => {
       let newCredits = 0; let newTitle = 'Üye'; let newRole: 'user' | 'admin' = 'user';
-      if (plan.id === '1') { newTitle = 'Girişimci Üye'; newCredits = 50; newRole = 'user'; } else if (plan.id === '2') { newTitle = 'Profesyonel İthalatçı'; newCredits = -1; newRole = 'user'; } else if (plan.id === '3') { newTitle = 'Kurumsal Yönetici'; newCredits = -1; newRole = 'admin'; } else if (plan.id === 'free') { newTitle = 'Misafir Üye'; newCredits = 0; newRole = 'user'; }
+      if (plan.id === '1') { newTitle = 'Girişimci Üye'; newCredits = 50; newRole = 'user'; } 
+      else if (plan.id === '2') { newTitle = 'Profesyonel İthalatçı'; newCredits = -1; newRole = 'user'; } 
+      else if (plan.id === '3') { newTitle = 'Kurumsal Yönetici'; newCredits = -1; newRole = 'admin'; } 
+      else if (plan.id === 'free') { newTitle = 'Misafir Üye'; newCredits = 0; newRole = 'user'; }
+      
+      // Mock Update
       const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-      if (mockSessionStr) {
-          const user = JSON.parse(mockSessionStr);
-          const updatedUser = { ...user, planId: plan.id, title: newTitle, credits: newCredits, role: newRole, subscriptionStatus: 'active' };
-          if (!targetUserEmail || targetUserEmail === user.email) localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (mockSessionStr && !user) {
+          const u = JSON.parse(mockSessionStr);
+          const updatedUser = { ...u, planId: plan.id, title: newTitle, credits: newCredits, role: newRole, subscriptionStatus: 'active' };
+          if (!targetUserEmail || targetUserEmail === u.email) localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
           return updatedUser;
       }
+
       let userIdToUpdate = ''; let currentUser = null;
-      if (targetUserEmail) { const { data: targetProfile } = await supabase.from('profiles').select('id').eq('email', targetUserEmail).single(); if (targetProfile) userIdToUpdate = targetProfile.id; } else { const { data: { user } } = await supabase.auth.getUser(); if (user) userIdToUpdate = user.id; currentUser = user; }
+      if (targetUserEmail) { const { data: targetProfile } = await supabase.from('profiles').select('id').eq('email', targetUserEmail).single(); if (targetProfile) userIdToUpdate = targetProfile.id; } 
+      else { if (user) userIdToUpdate = user.id; currentUser = user; }
+      
       if (!userIdToUpdate) throw new Error("Kullanıcı bulunamadı");
+      
       const { error: profileError } = await supabase.from('profiles').update({ plan_id: plan.id, credits: newCredits, title: newTitle, role: newRole, subscription_status: 'active' }).eq('id', userIdToUpdate);
       if (profileError) throw new Error("Profil güncellenemedi.");
+      
       if (!targetUserEmail && currentUser) {
           const billingRecord = { user_id: currentUser.id, date: new Date().toLocaleDateString('tr-TR'), plan_name: plan.name, amount: plan.price, status: 'paid', invoice_url: '#' };
           await supabase.from('billing_history').insert(billingRecord);
       }
+      
       if (!targetUserEmail) { return await storageService.getCurrentUserProfile(); } else { return { email: targetUserEmail } as any; }
   },
 
   cancelUserSubscription: async (): Promise<User> => {
-      const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-      if (mockSessionStr) { const user = JSON.parse(mockSessionStr); const updatedUser = { ...user, planId: 'free', credits: 0, title: 'Misafir Üye', subscriptionStatus: 'cancelled', discount: undefined, role: 'user' }; localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser)); return updatedUser; }
-      const { data: { user } } = await supabase.auth.getUser(); if (!user) throw new Error("Kullanıcı bulunamadı");
+      const { data: { user } } = await supabase.auth.getUser(); 
+      
+      // Mock Cancel
+      if (!user) {
+        const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+        if (mockSessionStr) { const u = JSON.parse(mockSessionStr); const updatedUser = { ...u, planId: 'free', credits: 0, title: 'Misafir Üye', subscriptionStatus: 'cancelled', discount: undefined, role: 'user' }; localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser)); return updatedUser; }
+        throw new Error("Kullanıcı bulunamadı");
+      }
+
       if (user.email === 'admin@admin.com') return await storageService.getCurrentUserProfile();
       const { error } = await supabase.from('profiles').update({ plan_id: 'free', credits: 0, title: 'Misafir Üye', role: 'user', subscription_status: 'cancelled', discount_active: false, discount_rate: 0, discount_end_date: null }).eq('id', user.id);
       if (error) throw new Error("Abonelik iptal edilirken hata oluştu.");
@@ -242,9 +330,15 @@ export const storageService = {
   },
 
   applyRetentionOffer: async (): Promise<User> => {
-      const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-      if (mockSessionStr) { const user = JSON.parse(mockSessionStr); const endDate = new Date(); endDate.setMonth(endDate.getMonth() + 3); const updatedUser = { ...user, discount: { isActive: true, rate: 0.5, endDate: endDate.toISOString() } }; localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser)); return updatedUser; }
-      const { data: { user } } = await supabase.auth.getUser(); if (!user) throw new Error("Kullanıcı bulunamadı");
+      const { data: { user } } = await supabase.auth.getUser(); 
+      
+      // Mock Offer
+      if (!user) {
+        const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+        if (mockSessionStr) { const u = JSON.parse(mockSessionStr); const endDate = new Date(); endDate.setMonth(endDate.getMonth() + 3); const updatedUser = { ...u, discount: { isActive: true, rate: 0.5, endDate: endDate.toISOString() } }; localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser)); return updatedUser; }
+        throw new Error("Kullanıcı bulunamadı");
+      }
+
       const endDate = new Date(); endDate.setMonth(endDate.getMonth() + 3);
       const { error } = await supabase.from('profiles').update({ discount_active: true, discount_rate: 0.5, discount_end_date: endDate.toISOString() }).eq('id', user.id);
       if (error) throw new Error("İndirim tanımlanamadı.");
@@ -252,28 +346,34 @@ export const storageService = {
   },
 
   getUserBilling: async (userEmail: string): Promise<BillingHistory[]> => {
-      if (localStorage.getItem(MOCK_SESSION_KEY)) return [];
-      const { data: { user } } = await supabase.auth.getUser(); if (!user) return [];
+      const { data: { user } } = await supabase.auth.getUser(); 
+      if (!user) return [];
       const { data, error } = await supabase.from('billing_history').select('*').order('created_at', { ascending: false });
       if (error) return [];
       return data.map((item: any) => ({ id: item.id, date: item.date, planName: item.plan_name, amount: item.amount, status: item.status, invoiceUrl: item.invoice_url }));
   },
   
   getAllUsers: async (): Promise<User[]> => {
-      if (localStorage.getItem(MOCK_SESSION_KEY)) return [];
+      const { data: { user } } = await supabase.auth.getUser();
+      // Admin değilse veya login olmamışsa boş dön
+      if (!user) return [];
+
       const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
       if (error) return [];
       return data.map((p: any) => ({ email: p.email, name: p.full_name, title: p.title, role: p.role || 'user', planId: p.plan_id || 'free', credits: p.credits, subscriptionStatus: p.subscription_status, isEmailVerified: p.is_email_verified, isPhoneVerified: p.is_phone_verified, phoneNumber: p.phone_number })); 
   },
 
   deleteUser: async (email: string) => {
-      if (localStorage.getItem(MOCK_SESSION_KEY)) return;
+      // Mock silme (Etkisiz)
+      if (!email.includes('@')) return;
       await supabase.from('profiles').delete().eq('email', email);
   },
 
   getDashboardStats: async (): Promise<DashboardStats> => {
-      // 1. Mock Data Handling (Fallback)
-      if (localStorage.getItem(MOCK_SESSION_KEY)) {
+      // 1. Mock Data Handling (Sadece Supabase user yoksa)
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user && localStorage.getItem(MOCK_SESSION_KEY)) {
         return {
             totalRevenue: 124500,
             revenueChange: 12,
@@ -361,27 +461,30 @@ export const storageService = {
   generateVerificationCode: (type?: string, identifier?: string) => Math.floor(100000 + Math.random() * 900000).toString(),
   
   verifyUserContact: async (email: string, type: 'email' | 'phone', code: string, phoneNumber?: string): Promise<{ success: boolean, message: string, user?: User }> => {
-      const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-      if (mockSessionStr) {
-          if (code.length === 6) {
-             const user = JSON.parse(mockSessionStr);
-             const updates: any = type === 'email' ? { isEmailVerified: true } : { isPhoneVerified: true };
-              if (phoneNumber && type === 'phone') updates.phoneNumber = phoneNumber;
-             const updatedUser = { ...user, ...updates, credits: user.credits + 1 };
-             localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
-             return { success: true, message: "Doğrulandı! +1 Analiz Kredisi hesabınıza eklendi. (Test Modu)", user: updatedUser };
+      // Mock Session Kontrol
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+          const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+          if (mockSessionStr) {
+              if (code.length === 6) {
+                const u = JSON.parse(mockSessionStr);
+                const updates: any = type === 'email' ? { isEmailVerified: true } : { isPhoneVerified: true };
+                  if (phoneNumber && type === 'phone') updates.phoneNumber = phoneNumber;
+                const updatedUser = { ...u, ...updates, credits: u.credits + 1 };
+                localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
+                return { success: true, message: "Doğrulandı! +1 Analiz Kredisi hesabınıza eklendi. (Test Modu)", user: updatedUser };
+              }
+              return { success: false, message: "Kod hatalı." };
           }
-          return { success: false, message: "Kod hatalı." };
       }
-      if (code.length === 6) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-              const updates: any = type === 'email' ? { is_email_verified: true } : { is_phone_verified: true };
-              if (phoneNumber && type === 'phone') updates.phone_number = phoneNumber;
-              const current = await storageService.getCurrentUserProfile();
-              await supabase.from('profiles').update({ ...updates, credits: current.credits + 1 }).eq('id', user.id);
-              return { success: true, message: "Doğrulandı! +1 Analiz Kredisi hesabınıza eklendi.", user: await storageService.getCurrentUserProfile() };
-          }
+
+      if (code.length === 6 && user) {
+          const updates: any = type === 'email' ? { is_email_verified: true } : { is_phone_verified: true };
+          if (phoneNumber && type === 'phone') updates.phone_number = phoneNumber;
+          const current = await storageService.getCurrentUserProfile();
+          await supabase.from('profiles').update({ ...updates, credits: current.credits + 1 }).eq('id', user.id);
+          return { success: true, message: "Doğrulandı! +1 Analiz Kredisi hesabınıza eklendi.", user: await storageService.getCurrentUserProfile() };
       }
       return { success: false, message: "Kod hatalı veya süresi dolmuş." };
   },
