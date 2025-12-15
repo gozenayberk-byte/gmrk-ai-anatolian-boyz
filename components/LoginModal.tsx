@@ -51,12 +51,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
     const cleanName = name.trim();
 
     // 1. ZAMAN AŞIMI KORUMASI (SAFETY VALVE)
-    // 15 saniye içinde işlem bitmezse zorla durdur.
+    // 30 saniye içinde işlem bitmezse zorla durdur.
     timeoutRef.current = setTimeout(() => {
         setIsLoading(false);
-        setError("Sunucu yanıt vermiyor. Bağlantınızı kontrol edin veya daha sonra tekrar deneyin.");
+        setError("Sunucuya erişilemiyor. Lütfen internet bağlantınızı kontrol edin veya güvenlik duvarı ayarlarınızı gözden geçirin.");
         console.error("Login Timeout Triggered");
-    }, 15000);
+    }, 30000);
 
     try {
       if (isRegister) {
@@ -95,9 +95,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
       
       // Kullanıcı dostu hata mesajları
       let message = err.message || "İşlem sırasında bir hata oluştu.";
+      
+      // Supabase & Network hataları
       if (message.includes("Invalid login credentials")) message = "E-posta veya şifre hatalı.";
       if (message.includes("User not found")) message = "Böyle bir kullanıcı bulunamadı.";
       if (message.includes("Email not confirmed")) message = "Lütfen önce e-posta adresinizi doğrulayın.";
+      if (message.includes("fetch failed") || message.includes("Failed to fetch")) message = "Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edin.";
       
       setError(message);
     }

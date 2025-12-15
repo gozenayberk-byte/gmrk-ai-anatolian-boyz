@@ -24,7 +24,7 @@ import {
   TrendingUp, ShieldCheck, Zap, Award, Check, X as XIcon, Globe, ArrowRight, Globe2, Store,
   Search, FileText, Hash, DollarSign, Mail, Package, ChevronDown, ChevronUp, HelpCircle, AlertCircle,
   BarChart3, Send, History, Briefcase, Star, Building2, Handshake, Server, Users, Menu, Sparkles, LayoutDashboard,
-  Smartphone, ScanLine, FileCheck, Coffee, Quote, Gift, CheckCircle2, ThumbsUp, XCircle, MousePointer2
+  Smartphone, ScanLine, FileCheck, Coffee, Quote, Gift, CheckCircle2, ThumbsUp, XCircle, MousePointer2, Image as ImageIcon
 } from 'lucide-react';
 
 // Varsayılan Paket Verileri
@@ -500,6 +500,7 @@ const App: React.FC = () => {
               
               {/* MODÜL 1: HERO SECTION - The Hook */}
               <section className="relative overflow-hidden pt-20 pb-32 lg:pt-32 lg:pb-40">
+                 {/* CSS Gradient instead of external pattern */}
                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-50 via-white to-white opacity-70"></div>
                  
                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
@@ -549,7 +550,7 @@ const App: React.FC = () => {
               <section className="pb-32 -mt-20 relative z-20 px-4">
                   <div className="max-w-6xl mx-auto">
                       <div className="relative group">
-                          {/* Glow Effect - Optimized: Removed animation for performance */}
+                          {/* Glow Effect */}
                           <div className="absolute -inset-1 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-3xl blur opacity-25"></div>
                           
                           {/* Browser Window Mockup */}
@@ -572,7 +573,9 @@ const App: React.FC = () => {
                                   {/* Left: Product Image & Basic Info */}
                                   <div className="lg:col-span-1 space-y-6">
                                       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                          <img src={siteContent.productDemo?.imageUrl || "https://via.placeholder.com/400"} alt="Demo Product" className="w-full h-48 object-cover rounded-lg mb-4" />
+                                          <div className="w-full h-48 bg-slate-200 rounded-lg mb-4 flex items-center justify-center text-slate-400">
+                                            <ImageIcon className="w-12 h-12" />
+                                          </div>
                                           <h3 className="font-bold text-slate-900">Akıllı Robot Süpürge</h3>
                                           <p className="text-xs text-slate-500 mt-1">Ev tipi temizlik robotu, lityum bataryalı.</p>
                                       </div>
@@ -741,7 +744,11 @@ const App: React.FC = () => {
 
               {/* MODÜL 5: VERIFICATION PROMO (The Hook) */}
               <section className="py-20 bg-slate-900 text-white relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                  {/* CSS Pattern instead of external image */}
+                  <div className="absolute inset-0 opacity-10" style={{
+                    backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0)',
+                    backgroundSize: '24px 24px'
+                  }}></div>
                   <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
                       <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-yellow-400/50 animate-pulse">
                           <Gift className="w-8 h-8 text-slate-900" />
@@ -942,7 +949,11 @@ const App: React.FC = () => {
               <section className="py-24 bg-white border-t border-slate-100">
                   <div className="max-w-5xl mx-auto px-4 text-center">
                       <div className="bg-gradient-to-br from-brand-600 to-indigo-700 rounded-3xl p-12 md:p-20 text-white shadow-2xl relative overflow-hidden">
-                          <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20"></div>
+                          {/* CSS Pattern */}
+                          <div className="absolute top-0 left-0 w-full h-full opacity-20" style={{
+                              backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0, rgba(255,255,255,0.1) 1px, transparent 0, transparent 50%)',
+                              backgroundSize: '10px 10px'
+                          }}></div>
                           <div className="relative z-10">
                               <h2 className="text-3xl md:text-5xl font-black mb-6">İthalat Yapmak Hiç Bu Kadar Kolay Olmamıştı</h2>
                               <p className="text-xl text-brand-100 mb-10 max-w-2xl mx-auto">
