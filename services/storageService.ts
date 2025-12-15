@@ -396,10 +396,6 @@ export const storageService = {
       if (error || !data || !data.content) return FALLBACK_CONTENT;
       
       const dbContent = data.content;
-
-      // SMART MERGE: 
-      // Eğer DB'den gelen veri boş ise (özellikle kritik array'ler), Fallback kullan.
-      // Bu, "boş SSS" veya "boş Yorumlar" sorununu çözer.
       
       return {
         ...FALLBACK_CONTENT,
@@ -433,43 +429,70 @@ export const storageService = {
 
   // --- USER & BILLING UPDATES ---
 
-  updateUserSubscription: async (plan: SubscriptionPlan): Promise<User> => {
-      // Mock Bypass
-      const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-      if (mockSessionStr) {
-          const user = JSON.parse(mockSessionStr);
-          let newCredits = 0;
-          let newTitle = 'Üye';
-          
-          if (plan.id === '1') { newTitle = 'Girişimci Üye'; newCredits = 50; } 
-          else if (plan.id === '2') { newTitle = 'Profesyonel İthalatçı'; newCredits = -1; } 
-          else if (plan.id === '3') { newTitle = 'Kurumsal Üye'; newCredits = -1; }
-
-          const updatedUser = { ...user, planId: plan.id, title: newTitle, credits: newCredits, subscriptionStatus: 'active' };
-          localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
-          return updatedUser;
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Kullanıcı bulunamadı");
-
-      if (user.email === 'admin@admin.com') {
-          return await storageService.getCurrentUserProfile();
-      }
-
+  updateUserSubscription: async (plan: SubscriptionPlan, targetUserEmail?: string): Promise<User> => {
+      // 1. Yetki ve Plan Ayarları
       let newCredits = 0;
       let newTitle = 'Üye';
+      let newRole: 'user' | 'admin' = 'user';
       
       if (plan.id === '1') { 
           newTitle = 'Girişimci Üye'; 
           newCredits = 50; 
+          newRole = 'user';
       } else if (plan.id === '2') { 
           newTitle = 'Profesyonel İthalatçı'; 
-          newCredits = -1; 
+          newCredits = -1; // Sınırsız
+          newRole = 'user';
       } else if (plan.id === '3') { 
-          newTitle = 'Kurumsal Üye'; 
+          newTitle = 'Kurumsal Yönetici'; 
           newCredits = -1; 
+          newRole = 'admin'; // Kurumsal Paket = Admin Yetkisi
+      } else if (plan.id === 'free') {
+          newTitle = 'Misafir Üye';
+          newCredits = 0;
+          newRole = 'user';
       }
+
+      // --- MOCK MODE HANDLING ---
+      const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+      if (mockSessionStr) {
+          // Eğer targetUserEmail varsa (Admin panelinden başka kullanıcıyı güncelliyorsak)
+          // Mock modunda array tutmadığımız için sadece current user'ı güncelliyoruz gibi davranacağız.
+          const user = JSON.parse(mockSessionStr);
+          
+          const updatedUser = { 
+              ...user, 
+              planId: plan.id, 
+              title: newTitle, 
+              credits: newCredits, 
+              role: newRole,
+              subscriptionStatus: 'active' 
+          };
+          
+          // Eğer kendi kendimizi güncelliyorsak storage'a yaz
+          if (!targetUserEmail || targetUserEmail === user.email) {
+              localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
+          }
+          return updatedUser;
+      }
+      
+      // --- REAL SUPABASE MODE ---
+
+      // Eğer targetUserEmail varsa (Admin işlem yapıyorsa), o kullanıcının ID'sini bulmamız lazım.
+      // Ancak Auth tablosuna doğrudan erişimimiz yoksa profiles tablosundan email ile buluruz.
+      let userIdToUpdate = '';
+      let currentUser = null;
+
+      if (targetUserEmail) {
+          const { data: targetProfile } = await supabase.from('profiles').select('id').eq('email', targetUserEmail).single();
+          if (targetProfile) userIdToUpdate = targetProfile.id;
+      } else {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) userIdToUpdate = user.id;
+          currentUser = user;
+      }
+
+      if (!userIdToUpdate) throw new Error("Kullanıcı bulunamadı");
 
       // Profili güncelle
       const { error: profileError } = await supabase
@@ -478,27 +501,33 @@ export const storageService = {
             plan_id: plan.id, 
             credits: newCredits, 
             title: newTitle,
+            role: newRole, // Rolü de güncelle
             subscription_status: 'active' 
         })
-        .eq('id', user.id);
+        .eq('id', userIdToUpdate);
       
       if (profileError) throw new Error("Profil güncellenemedi.");
 
-      // Ödemeyi kaydet (Gerçekte tutar indirimliyse indirimli tutar yazılır)
-      // Burada plan fiyatını yazıyoruz ama indirimliyse backend'de handle edilmesi gerekir.
-      // Basitlik adına şimdilik plan fiyatı.
-      const billingRecord = {
-          user_id: user.id,
-          date: new Date().toLocaleDateString('tr-TR'),
-          plan_name: plan.name,
-          amount: plan.price,
-          status: 'paid',
-          invoice_url: '#'
-      };
+      // Ödemeyi kaydet (Sadece kendisi satın alıyorsa)
+      if (!targetUserEmail && currentUser) {
+          const billingRecord = {
+              user_id: currentUser.id,
+              date: new Date().toLocaleDateString('tr-TR'),
+              plan_name: plan.name,
+              amount: plan.price,
+              status: 'paid',
+              invoice_url: '#'
+          };
+          await supabase.from('billing_history').insert(billingRecord);
+      }
 
-      await supabase.from('billing_history').insert(billingRecord);
-
-      return await storageService.getCurrentUserProfile();
+      // Güncel veriyi dön (Eğer kendisiyse)
+      if (!targetUserEmail) {
+          return await storageService.getCurrentUserProfile();
+      } else {
+          // Başkasını güncellediysek dummy user dön (UI'da kullanılmayacak)
+          return { email: targetUserEmail } as any; 
+      }
   },
 
   cancelUserSubscription: async (): Promise<User> => {
@@ -512,7 +541,8 @@ export const storageService = {
               credits: 0, 
               title: 'Misafir Üye', 
               subscriptionStatus: 'cancelled',
-              discount: undefined
+              discount: undefined,
+              role: 'user' // Reset role to user
           };
           localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
           return updatedUser;
@@ -531,8 +561,9 @@ export const storageService = {
             plan_id: 'free',
             credits: 0,
             title: 'Misafir Üye',
+            role: 'user', // Rolü sıfırla
             subscription_status: 'cancelled',
-            discount_active: false, // İptalde indirimi de sil
+            discount_active: false,
             discount_rate: 0,
             discount_end_date: null
         })
@@ -543,7 +574,6 @@ export const storageService = {
       return await storageService.getCurrentUserProfile();
   },
 
-  // YENİ: İndirim tanımlama fonksiyonu
   applyRetentionOffer: async (): Promise<User> => {
       // Mock Bypass
       const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
@@ -562,7 +592,6 @@ export const storageService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Kullanıcı bulunamadı");
 
-      // 3 Ay sonrası
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + 3);
 
@@ -570,7 +599,7 @@ export const storageService = {
         .from('profiles')
         .update({
             discount_active: true,
-            discount_rate: 0.5, // %50
+            discount_rate: 0.5,
             discount_end_date: endDate.toISOString()
         })
         .eq('id', user.id);
@@ -619,7 +648,7 @@ export const storageService = {
           email: p.email,
           name: p.full_name,
           title: p.title,
-          role: 'user', 
+          role: p.role || 'user', // DB'den gelen rolü kullan
           planId: p.plan_id || 'free',
           credits: p.credits,
           subscriptionStatus: p.subscription_status,

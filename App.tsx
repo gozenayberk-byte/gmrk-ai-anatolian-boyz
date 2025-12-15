@@ -68,18 +68,19 @@ const INITIAL_PLANS: SubscriptionPlan[] = [
   {
     id: '3',
     name: "Kurumsal",
-    price: "Özel Teklif",
-    period: "",
+    price: "4.999 ₺", // Fiyat eklendi
+    period: "/ ay",
     description: "Holdingler ve Gümrük Müşavirlik firmaları için.",
     iconKey: 'building',
     features: [
       "Tüm Profesyonel Özellikler",
-      "Çoklu Kullanıcı & Arşiv Yönetimi",
-      "Canlı Gümrük Müşaviri Desteği",
+      "Yönetici Paneli Erişimi", // Yeni özellik
+      "Kullanıcı ve Rol Yönetimi", // Yeni özellik
+      "Site İçerik Düzenleme", // Yeni özellik
       "API Erişimi (ERP Entegrasyonu)",
       "7/24 Özel Temsilci"
     ],
-    cta: "İletişime Geç",
+    cta: "Satın Al & Yönet",
     popular: false,
     color: "indigo"
   }
@@ -717,7 +718,7 @@ const App: React.FC = () => {
                           <p className="text-slate-500 mt-2">İster yeni başlıyor ol, ister profesyonel.</p>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
                           {/* Entrepreneur Plan */}
                           <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:border-brand-300 transition-all relative overflow-hidden group">
                               <div className="absolute top-0 right-0 bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-bl-xl">BAŞLANGIÇ</div>
@@ -748,7 +749,7 @@ const App: React.FC = () => {
                           </div>
 
                           {/* Professional Plan */}
-                          <div className="bg-white rounded-3xl p-8 border-2 border-brand-500 shadow-xl shadow-brand-500/10 relative overflow-hidden transform md:-translate-y-4">
+                          <div className="bg-white rounded-3xl p-8 border-2 border-brand-500 shadow-xl shadow-brand-500/10 relative overflow-hidden transform md:-translate-y-4 z-10">
                               <div className="absolute top-0 left-0 w-full h-1 bg-brand-500"></div>
                               <div className="absolute top-0 right-0 bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-bl-xl">POPÜLER</div>
                               <div className="flex items-center gap-4 mb-6">
@@ -775,6 +776,36 @@ const App: React.FC = () => {
                                   <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-brand-500" /> Çin & TR Fiyat Analizi</li>
                                   <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-brand-500" /> Tedarikçi Mail Taslakları</li>
                                   <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-brand-500" /> Geçmiş Arşivi</li>
+                              </ul>
+                          </div>
+
+                           {/* Corporate Plan */}
+                           <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:border-indigo-300 transition-all relative overflow-hidden group">
+                              <div className="absolute top-0 right-0 bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-bl-xl">YÖNETİM</div>
+                              <div className="flex items-center gap-4 mb-6">
+                                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+                                      <Building2 className="w-6 h-6" />
+                                  </div>
+                                  <div>
+                                      <h3 className="text-xl font-bold text-slate-900">Kurumsal Paket</h3>
+                                      <p className="text-sm text-slate-500">Tam yetkili yönetim.</p>
+                                  </div>
+                              </div>
+                              <div className="flex items-baseline gap-1 mb-8">
+                                  <span className="text-4xl font-black text-slate-900">4.999 ₺</span>
+                                  <span className="text-slate-500">/ ay</span>
+                              </div>
+                              <p className="text-slate-600 mb-8 min-h-[3rem]">
+                                  Admin paneli, kullanıcı yönetimi ve site içeriğini düzenleme yetkisi.
+                              </p>
+                              <button onClick={() => handleSelectPlan(plans[2])} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors mb-8 shadow-lg shadow-indigo-500/20">
+                                  Paketi Seç
+                              </button>
+                              <ul className="space-y-3">
+                                  <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-green-500" /> Yönetici Paneli</li>
+                                  <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-green-500" /> Rol Yönetimi</li>
+                                  <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-green-500" /> İçerik Düzenleme</li>
+                                  <li className="flex items-center gap-3 text-sm text-slate-700"><Check className="w-5 h-5 text-green-500" /> Sınırsız Erişim</li>
                               </ul>
                           </div>
                       </div>
