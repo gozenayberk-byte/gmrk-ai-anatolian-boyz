@@ -4,6 +4,7 @@ import { supabase } from "./supabaseClient";
 
 // Mock Session Key for LocalStorage
 const MOCK_SESSION_KEY = 'gumrukai_mock_session';
+const MOCK_HISTORY_PREFIX = 'gumrukai_mock_history_';
 
 // Zenginleştirilmiş Fallback İçerik (Micro-SaaS & Pazarlama Odaklı)
 const FALLBACK_CONTENT: SiteContent = {
@@ -198,15 +199,26 @@ export const storageService = {
     }
 
     // REAL LOGIN: Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
 
-    if (error) throw new Error("E-posta veya şifre hatalı.");
-    if (!data.user) throw new Error("Giriş yapılamadı.");
+        if (error) {
+            console.error("Supabase Login Error:", error);
+            throw new Error(error.message);
+        }
+        
+        if (!data.user) {
+            throw new Error("Giriş yapılamadı. Kullanıcı bulunamadı.");
+        }
 
-    return await storageService.getCurrentUserProfile();
+        return await storageService.getCurrentUserProfile();
+    } catch (e: any) {
+        // Hatanın UI'a gitmesi için fırlatıyoruz
+        throw e;
+    }
   },
 
   logoutUser: async () => {
@@ -286,24 +298,31 @@ export const storageService = {
     };
   },
 
+  // ... (Geri kalan kod aynı) ...
+  
   // --- DATA OPERATIONS ---
 
   saveToHistory: async (userEmail: string, analysis: CustomsAnalysis): Promise<HistoryItem> => {
-    // Mock user ise localStorage'a kaydetmeyi simüle et veya atla
+    // 1. MOCK MODE: LocalStorage'a kaydet (Test kullanıcıları için)
     const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
     if (mockSessionStr) {
-       const mockUser = JSON.parse(mockSessionStr);
-       // Mock history for session (simplified)
-       const newItem = {
+       const newItem: HistoryItem = {
           ...analysis,
           id: `mock-${Date.now()}`,
           date: new Date().toLocaleDateString('tr-TR'),
           timestamp: Date.now()
        };
-       // Not persisting mock history between reloads for simplicity, just returns success
+       
+       // Mevcut geçmişi al ve yenisini ekle
+       const mockHistoryKey = `${MOCK_HISTORY_PREFIX}${userEmail}`;
+       const currentHistory = JSON.parse(localStorage.getItem(mockHistoryKey) || '[]');
+       const updatedHistory = [newItem, ...currentHistory];
+       localStorage.setItem(mockHistoryKey, JSON.stringify(updatedHistory));
+       
        return newItem;
     }
 
+    // 2. REAL MODE: Supabase'e kaydet
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Kullanıcı oturumu yok.");
 
@@ -314,16 +333,19 @@ export const storageService = {
         }
     }
 
+    // Insert payload
     const newItem = {
       user_id: user.id,
       product_name: analysis.productName,
       description: analysis.description,
       hs_code: analysis.hsCode,
-      taxes: analysis.taxes,
-      documents: analysis.documents,
+      hs_code_description: analysis.hsCodeDescription,
+      taxes: analysis.taxes, // Array olarak gönder (DB'de JSONB olmalı)
+      documents: analysis.documents, // Array olarak gönder
       import_price: analysis.importPrice,
       retail_price: analysis.retailPrice,
-      hs_code_description: analysis.hsCodeDescription
+      email_draft: analysis.emailDraft,
+      confidence_score: analysis.confidenceScore
     };
 
     const { data, error } = await supabase
@@ -334,7 +356,7 @@ export const storageService = {
 
     if (error) {
         console.error("Save error:", error);
-        throw new Error("Geçmişe kaydedilemedi.");
+        throw new Error("Geçmişe kaydedilemedi. (Veritabanı tablosu 'analysis_history' mevcut mu?)");
     }
 
     return {
@@ -346,31 +368,39 @@ export const storageService = {
   },
 
   getUserHistory: async (userEmail: string): Promise<HistoryItem[]> => {
-    // Mock check
+    // 1. MOCK MODE: LocalStorage'dan çek
     const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-    if (mockSessionStr) return [];
+    if (mockSessionStr) {
+       const mockHistoryKey = `${MOCK_HISTORY_PREFIX}${userEmail}`;
+       return JSON.parse(localStorage.getItem(mockHistoryKey) || '[]');
+    }
 
+    // 2. REAL MODE: Supabase'den çek
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
     const { data, error } = await supabase
       .from('analysis_history')
       .select('*')
+      .eq('user_id', user.id) // Sadece bu kullanıcının verilerini getir
       .order('created_at', { ascending: false });
 
-    if (error) return [];
+    if (error) {
+        console.error("History fetch error:", error);
+        return [];
+    }
 
     return data.map((item: any) => ({
       productName: item.product_name,
       description: item.description,
       hsCode: item.hs_code,
       hsCodeDescription: item.hs_code_description || '',
-      taxes: item.taxes,
-      documents: item.documents,
+      taxes: item.taxes || [],
+      documents: item.documents || [],
       importPrice: item.import_price,
       retailPrice: item.retail_price,
-      emailDraft: "",
-      confidenceScore: 90,
+      emailDraft: item.email_draft || "",
+      confidenceScore: item.confidence_score || 90,
       id: item.id,
       date: new Date(item.created_at).toLocaleDateString('tr-TR'),
       timestamp: new Date(item.created_at).getTime()
@@ -378,9 +408,17 @@ export const storageService = {
   },
 
   deleteHistoryItem: async (userEmail: string, id: string) => {
-    if (!id.startsWith('mock-')) {
-        await supabase.from('analysis_history').delete().eq('id', id);
+    // Mock deletion
+    if (id.startsWith('mock-')) {
+        const mockHistoryKey = `${MOCK_HISTORY_PREFIX}${userEmail}`;
+        const currentHistory = JSON.parse(localStorage.getItem(mockHistoryKey) || '[]');
+        const updatedHistory = currentHistory.filter((i: any) => i.id !== id);
+        localStorage.setItem(mockHistoryKey, JSON.stringify(updatedHistory));
+        return;
     }
+
+    // Real deletion
+    await supabase.from('analysis_history').delete().eq('id', id);
   },
 
   // --- CONTENT & SETTINGS ---

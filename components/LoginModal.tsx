@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { X, Lock, Mail, Loader2, ArrowRight, Info, Copy, User as UserIcon, Check, ShieldCheck } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Lock, Mail, Loader2, ArrowRight, Info, Copy, User as UserIcon, Check, ShieldCheck, AlertCircle } from 'lucide-react';
 import { User } from '../types';
 import { storageService } from '../services/storageService';
 
@@ -16,14 +16,32 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Timeout referansı (Memory leak önlemek için)
+  const timeoutRef = useRef<any>(null);
+
+  // Modal kapandığında state temizle
+  useEffect(() => {
+    if (!isOpen) {
+      setIsLoading(false);
+      setError(null);
+      setSuccessMsg(null);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Önceki işlemi temizle
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    
     setError(null);
     setSuccessMsg(null);
     setIsLoading(true);
@@ -32,38 +50,56 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
     const cleanPass = password.trim();
     const cleanName = name.trim();
 
-    // Zaman aşımı koruması: 10 saniye içinde yanıt gelmezse durdur.
-    const timeoutId = setTimeout(() => {
-        if (isLoading) {
-            setIsLoading(false);
-            setError("Sunucu yanıt vermiyor veya işlem zaman aşımına uğradı. Lütfen tekrar deneyin.");
-        }
-    }, 10000);
+    // 1. ZAMAN AŞIMI KORUMASI (SAFETY VALVE)
+    // 15 saniye içinde işlem bitmezse zorla durdur.
+    timeoutRef.current = setTimeout(() => {
+        setIsLoading(false);
+        setError("Sunucu yanıt vermiyor. Bağlantınızı kontrol edin veya daha sonra tekrar deneyin.");
+        console.error("Login Timeout Triggered");
+    }, 15000);
 
     try {
       if (isRegister) {
         if (!cleanName || !cleanEmail || !cleanPass) throw new Error("Lütfen tüm alanları doldurun.");
         
         const user = await storageService.registerUser(cleanName, cleanEmail, cleanPass);
-        clearTimeout(timeoutId);
+        
+        // Timeout'u iptal et (İşlem başarılı)
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        
         setSuccessMsg("Kayıt başarılı! Giriş yapılıyor...");
         
+        // Başarı animasyonu için kısa bekleme
         setTimeout(() => {
+           setIsLoading(false);
            onLogin(user);
            onClose();
         }, 1000);
 
       } else {
         const user = await storageService.loginUser(cleanEmail, cleanPass, rememberMe);
-        clearTimeout(timeoutId);
+        
+        // Timeout'u iptal et
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        
+        setIsLoading(false);
         onLogin(user);
         onClose();
       }
     } catch (err: any) {
-      clearTimeout(timeoutId);
-      setError(err.message || "İşlem sırasında bir hata oluştu.");
-    } finally {
+      // Timeout'u iptal et
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      
+      console.error("Login/Register Error UI:", err);
       setIsLoading(false);
+      
+      // Kullanıcı dostu hata mesajları
+      let message = err.message || "İşlem sırasında bir hata oluştu.";
+      if (message.includes("Invalid login credentials")) message = "E-posta veya şifre hatalı.";
+      if (message.includes("User not found")) message = "Böyle bir kullanıcı bulunamadı.";
+      if (message.includes("Email not confirmed")) message = "Lütfen önce e-posta adresinizi doğrulayın.";
+      
+      setError(message);
     }
   };
 
@@ -87,7 +123,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
     <div className="fixed inset-0 z-[140] flex items-center justify-center p-4">
       <div 
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
-        onClick={onClose}
+        onClick={!isLoading ? onClose : undefined}
       />
 
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row animate-in fade-in zoom-in duration-300 max-h-[90vh]">
@@ -104,7 +140,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
             </div>
             <button 
               onClick={onClose}
-              className="md:hidden p-2 bg-white rounded-full text-slate-400 hover:text-slate-600"
+              disabled={isLoading}
+              className="md:hidden p-2 bg-white rounded-full text-slate-400 hover:text-slate-600 disabled:opacity-50"
             >
               <X className="w-5 h-5" />
             </button>
@@ -113,7 +150,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
           <form onSubmit={handleSubmit} className="p-8 space-y-5 flex-1 overflow-y-auto">
             {error && (
               <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center gap-2 animate-in slide-in-from-top-2">
-                <span className="font-medium">Hata:</span> {error}
+                <AlertCircle className="w-4 h-4 flex-shrink-0" /> 
+                <span>{error}</span>
               </div>
             )}
             {successMsg && (
@@ -134,6 +172,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                     placeholder="Adınız Soyadınız"
                     className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
                     required={isRegister}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -150,6 +189,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                   placeholder="ornek@test.com"
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -165,6 +205,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                   placeholder="••••••••"
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -177,7 +218,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                     id="rememberMe"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-slate-300 shadow-sm transition-all checked:border-brand-600 checked:bg-brand-600 hover:border-brand-400 focus:ring-2 focus:ring-brand-500 focus:ring-offset-1"
+                    disabled={isLoading}
+                    className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-slate-300 shadow-sm transition-all checked:border-brand-600 checked:bg-brand-600 hover:border-brand-400 focus:ring-2 focus:ring-brand-500 focus:ring-offset-1 disabled:opacity-50"
                   />
                   <Check className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 w-3 h-3" />
                 </div>
@@ -190,7 +232,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-semibold shadow-lg shadow-slate-900/20 transition-all flex items-center justify-center gap-2 mt-4"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-semibold shadow-lg shadow-slate-900/20 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
@@ -211,7 +253,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                  <button 
                    type="button"
                    onClick={toggleMode}
-                   className="ml-2 font-bold text-brand-600 hover:text-brand-800 hover:underline transition-colors"
+                   disabled={isLoading}
+                   className="ml-2 font-bold text-brand-600 hover:text-brand-800 hover:underline transition-colors disabled:opacity-50"
                  >
                    {isRegister ? "Giriş Yapın" : "Hemen Kayıt Olun"}
                  </button>
@@ -231,7 +274,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                 <div className="space-y-3">
                     <button 
                         onClick={() => fillDemoCredentials('demo')}
-                        className="w-full text-left p-2 hover:bg-white rounded transition-colors group"
+                        disabled={isLoading}
+                        className="w-full text-left p-2 hover:bg-white rounded transition-colors group disabled:opacity-50"
                     >
                         <div className="text-xs text-brand-500 font-bold uppercase">Kullanıcı (User)</div>
                         <div className="text-xs text-slate-600 font-mono mt-0.5 group-hover:text-brand-700">demo@gumrukai.com</div>
@@ -240,7 +284,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
                     <div className="h-px bg-brand-100"></div>
                     <button 
                         onClick={() => fillDemoCredentials('admin')}
-                        className="w-full text-left p-2 hover:bg-white rounded transition-colors group"
+                        disabled={isLoading}
+                        className="w-full text-left p-2 hover:bg-white rounded transition-colors group disabled:opacity-50"
                     >
                         <div className="text-xs text-indigo-500 font-bold uppercase">Yönetici (Admin)</div>
                         <div className="text-xs text-slate-600 font-mono mt-0.5 group-hover:text-indigo-700">admin@admin.com</div>
