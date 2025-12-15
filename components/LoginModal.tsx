@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Lock, Mail, Loader2, ArrowRight, Info, Copy, User as UserIcon, Check } from 'lucide-react';
+import { X, Lock, Mail, Loader2, ArrowRight, Info, Copy, User as UserIcon, Check, ShieldCheck } from 'lucide-react';
 import { User } from '../types';
 import { storageService } from '../services/storageService';
 
@@ -32,14 +32,22 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
     const cleanPass = password.trim();
     const cleanName = name.trim();
 
+    // Zaman aşımı koruması: 10 saniye içinde yanıt gelmezse durdur.
+    const timeoutId = setTimeout(() => {
+        if (isLoading) {
+            setIsLoading(false);
+            setError("Sunucu yanıt vermiyor veya işlem zaman aşımına uğradı. Lütfen tekrar deneyin.");
+        }
+    }, 10000);
+
     try {
       if (isRegister) {
         if (!cleanName || !cleanEmail || !cleanPass) throw new Error("Lütfen tüm alanları doldurun.");
         
         const user = await storageService.registerUser(cleanName, cleanEmail, cleanPass);
-        setSuccessMsg("Kayıt başarılı! Giriş yapıldı.");
+        clearTimeout(timeoutId);
+        setSuccessMsg("Kayıt başarılı! Giriş yapılıyor...");
         
-        // Kısa bir bekleme ve login
         setTimeout(() => {
            onLogin(user);
            onClose();
@@ -47,10 +55,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
 
       } else {
         const user = await storageService.loginUser(cleanEmail, cleanPass, rememberMe);
+        clearTimeout(timeoutId);
         onLogin(user);
         onClose();
       }
     } catch (err: any) {
+      clearTimeout(timeoutId);
       setError(err.message || "İşlem sırasında bir hata oluştu.");
     } finally {
       setIsLoading(false);
@@ -61,6 +71,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
     setIsRegister(!isRegister);
     setError(null);
     setSuccessMsg(null);
+  };
+
+  const fillDemoCredentials = (type: 'admin' | 'demo') => {
+      if (type === 'admin') {
+          setEmail('admin@admin.com');
+          setPassword('admin');
+      } else {
+          setEmail('demo@gumrukai.com');
+          setPassword('demo');
+      }
   };
 
   return (
@@ -92,12 +112,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
 
           <form onSubmit={handleSubmit} className="p-8 space-y-5 flex-1 overflow-y-auto">
             {error && (
-              <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+              <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center gap-2 animate-in slide-in-from-top-2">
                 <span className="font-medium">Hata:</span> {error}
               </div>
             )}
             {successMsg && (
-              <div className="p-3 bg-green-50 text-green-600 text-sm rounded-lg border border-green-100 flex items-center gap-2">
+              <div className="p-3 bg-green-50 text-green-600 text-sm rounded-lg border border-green-100 flex items-center gap-2 animate-in slide-in-from-top-2">
                  <Loader2 className="w-4 h-4 animate-spin" /> {successMsg}
               </div>
             )}
@@ -202,14 +222,44 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onLogin }) => 
 
         {/* Info Side */}
         <div className="bg-brand-50 w-full md:w-80 border-l border-brand-100 p-6 flex flex-col justify-center">
-            <div className="flex items-center gap-2 text-brand-800 font-bold mb-4">
-              <Info className="w-5 h-5" />
-              <span>Supabase Bağlantısı</span>
+            
+            <div className="mb-6 p-4 bg-white/60 rounded-xl border border-brand-100 shadow-sm">
+                <div className="flex items-center gap-2 text-brand-800 font-bold mb-2 text-sm">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Demo Giriş Bilgileri</span>
+                </div>
+                <div className="space-y-3">
+                    <button 
+                        onClick={() => fillDemoCredentials('demo')}
+                        className="w-full text-left p-2 hover:bg-white rounded transition-colors group"
+                    >
+                        <div className="text-xs text-brand-500 font-bold uppercase">Kullanıcı (User)</div>
+                        <div className="text-xs text-slate-600 font-mono mt-0.5 group-hover:text-brand-700">demo@gumrukai.com</div>
+                        <div className="text-xs text-slate-400 font-mono">pass: demo</div>
+                    </button>
+                    <div className="h-px bg-brand-100"></div>
+                    <button 
+                        onClick={() => fillDemoCredentials('admin')}
+                        className="w-full text-left p-2 hover:bg-white rounded transition-colors group"
+                    >
+                        <div className="text-xs text-indigo-500 font-bold uppercase">Yönetici (Admin)</div>
+                        <div className="text-xs text-slate-600 font-mono mt-0.5 group-hover:text-indigo-700">admin@admin.com</div>
+                        <div className="text-xs text-slate-400 font-mono">pass: admin</div>
+                    </button>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-3 text-center">
+                   Test için yukarıdaki hesaplara tıklayarak bilgileri otomatik doldurabilirsiniz.
+                </p>
+            </div>
+
+            <div className="flex items-center gap-2 text-brand-800 font-bold mb-2 text-sm">
+              <Info className="w-4 h-4" />
+              <span>Veri Güvenliği</span>
             </div>
             <p className="text-xs text-brand-600 mb-6">
-              Bu uygulama Supabase veritabanına bağlı çalışmaktadır. Gerçek e-posta ve şifrenizle kayıt olabilir veya giriş yapabilirsiniz.
+              Bu uygulama Supabase veritabanına bağlı çalışmaktadır. Verileriniz şifrelenerek saklanır.
             </p>
-            <button onClick={onClose} className="hidden md:flex absolute top-4 right-4 p-2 bg-white/50 rounded-full text-brand-700">
+            <button onClick={onClose} className="hidden md:flex absolute top-4 right-4 p-2 bg-white/50 rounded-full text-brand-700 hover:bg-white">
               <X className="w-5 h-5" />
             </button>
         </div>

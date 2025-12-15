@@ -2,6 +2,9 @@
 import { CustomsAnalysis, HistoryItem, SiteContent, BillingHistory, User, DashboardStats, SubscriptionPlan } from "../types";
 import { supabase } from "./supabaseClient";
 
+// Mock Session Key for LocalStorage
+const MOCK_SESSION_KEY = 'gumrukai_mock_session';
+
 // Zenginleştirilmiş Fallback İçerik (Micro-SaaS & Pazarlama Odaklı)
 const FALLBACK_CONTENT: SiteContent = {
   hero: { 
@@ -100,6 +103,23 @@ export const storageService = {
   // --- AUTHENTICATION ---
 
   registerUser: async (name: string, email: string, password: string): Promise<User> => {
+    // MOCK REGISTER: Test e-postaları için sahte kayıt
+    if (email.endsWith('@test.com') || email === 'demo@gumrukai.com') {
+      const mockUser: User = {
+        email,
+        name: name || 'Test Kullanıcısı',
+        title: 'Misafir Üye',
+        role: 'user',
+        planId: 'free',
+        credits: 5,
+        subscriptionStatus: 'active',
+        isEmailVerified: true,
+        isPhoneVerified: true
+      };
+      localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockUser));
+      return mockUser;
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -113,6 +133,7 @@ export const storageService = {
     if (error) throw new Error(error.message);
     if (!data.user) throw new Error("Kullanıcı oluşturulamadı.");
 
+    // Gerçek Supabase kaydı başarılı ise
     if (email === 'admin@admin.com') {
       return {
         email: data.user.email!,
@@ -141,6 +162,42 @@ export const storageService = {
   },
 
   loginUser: async (email: string, password: string, rememberMe: boolean = false): Promise<User> => {
+    // MOCK LOGIN: Admin ve Demo hesapları için Supabase'i bypass et (Test ortamı için)
+    if (email === 'admin@admin.com' && password === 'admin') {
+        const mockAdmin: User = {
+            email: 'admin@admin.com',
+            name: 'Süper Admin',
+            title: 'Sistem Yöneticisi',
+            role: 'admin',
+            planId: '3',
+            credits: -1,
+            subscriptionStatus: 'active',
+            isEmailVerified: true,
+            isPhoneVerified: true
+        };
+        localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockAdmin));
+        await new Promise(r => setTimeout(r, 600)); // Simüle edilmiş ağ gecikmesi
+        return mockAdmin;
+    }
+
+    if (email === 'demo@gumrukai.com' && password === 'demo') {
+        const mockUser: User = {
+            email: 'demo@gumrukai.com',
+            name: 'Demo Kullanıcı',
+            title: 'Profesyonel İthalatçı',
+            role: 'user',
+            planId: '2',
+            credits: 100,
+            subscriptionStatus: 'active',
+            isEmailVerified: true,
+            isPhoneVerified: true
+        };
+        localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockUser));
+        await new Promise(r => setTimeout(r, 600)); // Simüle edilmiş ağ gecikmesi
+        return mockUser;
+    }
+
+    // REAL LOGIN: Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -153,10 +210,20 @@ export const storageService = {
   },
 
   logoutUser: async () => {
+    // Mock session temizle
+    localStorage.removeItem(MOCK_SESSION_KEY);
+    // Real session temizle
     await supabase.auth.signOut();
   },
 
   getCurrentUserProfile: async (): Promise<User> => {
+    // 1. Önce Mock Session Kontrolü (Test kullanıcıları için)
+    const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+    if (mockSessionStr) {
+        return JSON.parse(mockSessionStr);
+    }
+
+    // 2. Gerçek Supabase Session Kontrolü
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Oturum açılmamış.");
 
@@ -222,6 +289,21 @@ export const storageService = {
   // --- DATA OPERATIONS ---
 
   saveToHistory: async (userEmail: string, analysis: CustomsAnalysis): Promise<HistoryItem> => {
+    // Mock user ise localStorage'a kaydetmeyi simüle et veya atla
+    const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+    if (mockSessionStr) {
+       const mockUser = JSON.parse(mockSessionStr);
+       // Mock history for session (simplified)
+       const newItem = {
+          ...analysis,
+          id: `mock-${Date.now()}`,
+          date: new Date().toLocaleDateString('tr-TR'),
+          timestamp: Date.now()
+       };
+       // Not persisting mock history between reloads for simplicity, just returns success
+       return newItem;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Kullanıcı oturumu yok.");
 
@@ -264,6 +346,10 @@ export const storageService = {
   },
 
   getUserHistory: async (userEmail: string): Promise<HistoryItem[]> => {
+    // Mock check
+    const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+    if (mockSessionStr) return [];
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
@@ -292,7 +378,9 @@ export const storageService = {
   },
 
   deleteHistoryItem: async (userEmail: string, id: string) => {
-    await supabase.from('analysis_history').delete().eq('id', id);
+    if (!id.startsWith('mock-')) {
+        await supabase.from('analysis_history').delete().eq('id', id);
+    }
   },
 
   // --- CONTENT & SETTINGS ---
@@ -334,6 +422,11 @@ export const storageService = {
   },
 
   saveSiteContent: async (content: SiteContent) => {
+    // Mock mode guard
+    if (localStorage.getItem(MOCK_SESSION_KEY)) {
+        console.log("Mock mode: Content saved locally (simulated)");
+        return;
+    }
     const { error } = await supabase.from('site_config').upsert({ id: 1, content });
     if (error) console.error("Content save error:", error);
   },
@@ -341,6 +434,22 @@ export const storageService = {
   // --- USER & BILLING UPDATES ---
 
   updateUserSubscription: async (plan: SubscriptionPlan): Promise<User> => {
+      // Mock Bypass
+      const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+      if (mockSessionStr) {
+          const user = JSON.parse(mockSessionStr);
+          let newCredits = 0;
+          let newTitle = 'Üye';
+          
+          if (plan.id === '1') { newTitle = 'Girişimci Üye'; newCredits = 50; } 
+          else if (plan.id === '2') { newTitle = 'Profesyonel İthalatçı'; newCredits = -1; } 
+          else if (plan.id === '3') { newTitle = 'Kurumsal Üye'; newCredits = -1; }
+
+          const updatedUser = { ...user, planId: plan.id, title: newTitle, credits: newCredits, subscriptionStatus: 'active' };
+          localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
+          return updatedUser;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Kullanıcı bulunamadı");
 
@@ -393,6 +502,22 @@ export const storageService = {
   },
 
   cancelUserSubscription: async (): Promise<User> => {
+      // Mock Bypass
+      const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+      if (mockSessionStr) {
+          const user = JSON.parse(mockSessionStr);
+          const updatedUser = { 
+              ...user, 
+              planId: 'free', 
+              credits: 0, 
+              title: 'Misafir Üye', 
+              subscriptionStatus: 'cancelled',
+              discount: undefined
+          };
+          localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
+          return updatedUser;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Kullanıcı bulunamadı");
 
@@ -420,6 +545,20 @@ export const storageService = {
 
   // YENİ: İndirim tanımlama fonksiyonu
   applyRetentionOffer: async (): Promise<User> => {
+      // Mock Bypass
+      const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+      if (mockSessionStr) {
+          const user = JSON.parse(mockSessionStr);
+          const endDate = new Date();
+          endDate.setMonth(endDate.getMonth() + 3);
+          const updatedUser = { 
+              ...user, 
+              discount: { isActive: true, rate: 0.5, endDate: endDate.toISOString() }
+          };
+          localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
+          return updatedUser;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Kullanıcı bulunamadı");
 
@@ -442,6 +581,8 @@ export const storageService = {
   },
 
   getUserBilling: async (userEmail: string): Promise<BillingHistory[]> => {
+      if (localStorage.getItem(MOCK_SESSION_KEY)) return [];
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
@@ -465,6 +606,8 @@ export const storageService = {
   // --- ADMIN FUNCTIONS ---
   
   getAllUsers: async (): Promise<User[]> => {
+      if (localStorage.getItem(MOCK_SESSION_KEY)) return [];
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -487,10 +630,42 @@ export const storageService = {
   },
 
   deleteUser: async (email: string) => {
+      if (localStorage.getItem(MOCK_SESSION_KEY)) return;
       await supabase.from('profiles').delete().eq('email', email);
   },
 
   getDashboardStats: async (): Promise<DashboardStats> => {
+      // Mock stats for demo
+      if (localStorage.getItem(MOCK_SESSION_KEY)) {
+        return {
+            totalRevenue: 124500,
+            revenueChange: 12,
+            totalSales: 85,
+            salesChange: 5,
+            newUsers: 142,
+            usersChange: 8,
+            totalAnalyses: 1250,
+            analysesChange: 24,
+            planDistribution: [
+                { name: 'Girişimci', count: 45, color: '#0ea5e9' },
+                { name: 'Profesyonel', count: 30, color: '#f59e0b' },
+                { name: 'Kurumsal', count: 10, color: '#6366f1' }
+            ],
+            salesChart: [
+                { day: 'Pzt', value: 12 },
+                { day: 'Sal', value: 19 },
+                { day: 'Çar', value: 15 },
+                { day: 'Per', value: 22 },
+                { day: 'Cum', value: 30 },
+                { day: 'Cmt', value: 45 },
+                { day: 'Paz', value: 50 }
+            ],
+            recommendations: [
+                { title: 'Fiyatlandırma Stratejisi', description: 'Girişimci paketine talebi artırmak için kampanya yapın.', impact: 'high' }
+            ]
+        };
+      }
+
       const { data: billingData } = await supabase.from('billing_history').select('amount');
       let totalRevenue = 0;
       let totalSales = 0;
@@ -552,6 +727,22 @@ export const storageService = {
   },
   
   verifyUserContact: async (email: string, type: 'email' | 'phone', code: string, phoneNumber?: string): Promise<{ success: boolean, message: string, user?: User }> => {
+      // Mock Bypass
+      const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+      if (mockSessionStr) {
+          if (code.length === 6) {
+             const user = JSON.parse(mockSessionStr);
+             const updates: any = type === 'email' ? { isEmailVerified: true } : { isPhoneVerified: true };
+              if (phoneNumber && type === 'phone') {
+                  updates.phoneNumber = phoneNumber;
+              }
+             const updatedUser = { ...user, ...updates, credits: user.credits + 1 };
+             localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
+             return { success: true, message: "Doğrulandı! +1 Analiz Kredisi hesabınıza eklendi. (Test Modu)", user: updatedUser };
+          }
+          return { success: false, message: "Kod hatalı." };
+      }
+
       if (code.length === 6) {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
