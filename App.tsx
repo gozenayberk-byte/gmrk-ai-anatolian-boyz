@@ -319,7 +319,21 @@ const App: React.FC = () => {
   };
 
   const handleSelectPlan = (plan: SubscriptionPlan) => {
-      setSelectedPlanForPayment(plan);
+      let planToPay = { ...plan };
+
+      // Apply Retention Discount if active
+      if (user?.discount?.isActive) {
+         // Fiyatı string'den sayıya çevir (Örn: "399 ₺" -> 399)
+         const numericPrice = parseFloat(plan.price.replace(/\./g, '').replace(/[^0-9]/g, ''));
+         if (!isNaN(numericPrice)) {
+             const discountedPrice = Math.floor(numericPrice * (1 - user.discount.rate));
+             // Yeniden formatla (Örn: "199 ₺")
+             planToPay.price = `${discountedPrice.toLocaleString('tr-TR')} ₺`;
+             planToPay.originalPrice = plan.price;
+         }
+      }
+
+      setSelectedPlanForPayment(planToPay);
       setIsPricingModalOpen(false);
       setIsPaymentModalOpen(true);
   };
@@ -723,7 +737,7 @@ const App: React.FC = () => {
                               <p className="text-slate-600 mb-8 min-h-[3rem]">
                                   Ayda 50 ürüne kadar GTIP ve vergi tespiti yapın. Basit ve hızlı.
                               </p>
-                              <button onClick={() => setIsPricingModalOpen(true)} className="w-full py-3 bg-slate-100 text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-colors mb-8">
+                              <button onClick={() => handleSelectPlan(plans[0])} className="w-full py-3 bg-slate-100 text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-colors mb-8">
                                   Paketi Seç
                               </button>
                               <ul className="space-y-3">
@@ -753,7 +767,7 @@ const App: React.FC = () => {
                               <p className="text-slate-600 mb-8 min-h-[3rem]">
                                   Sınırsız sorgu, Çin fiyat analizi ve tedarikçi mail taslaklarıyla işinizi büyütün.
                               </p>
-                              <button onClick={() => setIsPricingModalOpen(true)} className="w-full py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/20 mb-8">
+                              <button onClick={() => handleSelectPlan(plans[1])} className="w-full py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/20 mb-8">
                                   Hemen Başla
                               </button>
                               <ul className="space-y-3">

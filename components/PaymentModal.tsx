@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Lock, CreditCard, Calendar, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
+import { X, Lock, CreditCard, Calendar, ShieldCheck, Loader2, AlertCircle, Percent } from 'lucide-react';
 import { SubscriptionPlan } from '../types';
 
 interface PaymentModalProps {
@@ -67,9 +67,19 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, plan, onPa
         <div className="w-full md:w-80 bg-slate-50 border-r border-slate-200 p-6 flex flex-col">
           <div className="mb-6">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Seçilen Paket</h3>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+              {plan.originalPrice && (
+                  <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg flex items-center gap-1">
+                      <Percent className="w-3 h-3" /> İNDİRİMLİ
+                  </div>
+              )}
               <h4 className="font-bold text-slate-900 text-lg">{plan.name}</h4>
-              <div className="text-brand-600 font-bold text-xl mt-1">{plan.price}</div>
+              <div className="mt-1 flex items-baseline gap-2">
+                  <div className="text-brand-600 font-bold text-xl">{plan.price}</div>
+                  {plan.originalPrice && (
+                      <div className="text-slate-400 text-sm line-through decoration-red-400 decoration-1">{plan.originalPrice}</div>
+                  )}
+              </div>
               <div className="text-xs text-slate-500 mt-1">{plan.period}</div>
             </div>
           </div>

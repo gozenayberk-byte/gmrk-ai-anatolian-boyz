@@ -5,7 +5,7 @@ import { storageService } from '../services/storageService';
 import { 
   User as UserIcon, Settings, CreditCard, History, LogOut, 
   ChevronRight, Calendar, Package, Download, Shield, Clock, 
-  ArrowUpRight, AlertTriangle, CheckCircle2, Zap, Gift, Smartphone, Mail, HelpCircle
+  ArrowUpRight, AlertTriangle, CheckCircle2, Zap, Gift, Smartphone, Mail, HelpCircle, Percent
 } from 'lucide-react';
 import GuideContent from './GuideContent';
 import CancelSubscriptionModal from './CancelSubscriptionModal';
@@ -24,7 +24,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
   user: initialUser, 
   onLogout, 
   onSelectHistory, 
-  onCancelSubscription: propCancelAction, // Ana App'ten gelen, biz burada iç state ile yöneteceğiz
+  onCancelSubscription: propCancelAction, 
   plans,
   onUpgradeClick,
   onOpenVerification
@@ -69,11 +69,17 @@ const UserProfile: React.FC<UserProfileProps> = ({
       }
   };
 
-  const handleAcceptDiscount = () => {
-      setIsCancelModalOpen(false);
-      alert("Tebrikler! %50 İndirim bir sonraki fatura döneminizde otomatik olarak uygulanacaktır. GümrükAI ile kaldığınız için teşekkürler!");
-      // Gerçek bir backend olmadığı için sadece modalı kapatıp kullanıcıyı mutlu ediyoruz.
-      // Backend olsaydı burada 'applyDiscount' endpoint'ine istek atılırdı.
+  const handleAcceptDiscount = async () => {
+      try {
+          // İndirimi tanımla (Backend/DB)
+          const updatedUser = await storageService.applyRetentionOffer();
+          setUser(updatedUser);
+          setIsCancelModalOpen(false);
+          alert("Tebrikler! 3 ay boyunca geçerli %50 indirim hesabınıza tanımlandı. Mevcut aboneliğiniz bu indirimle devam edecek.");
+      } catch (error) {
+          console.error("Discount apply failed", error);
+          alert("İndirim tanımlanırken bir hata oluştu.");
+      }
   };
 
   // Helper component for Tabs
@@ -165,6 +171,27 @@ const UserProfile: React.FC<UserProfileProps> = ({
           {activeTab === 'profile' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
               
+              {/* DISCOUNT ACTIVE BANNER */}
+              {user.discount && user.discount.isActive && (
+                  <div className="bg-gradient-to-r from-yellow-400 to-amber-500 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-xl -mr-10 -mt-10"></div>
+                      <div className="flex items-start gap-4 relative z-10">
+                          <div className="bg-white/20 p-3 rounded-xl">
+                              <Percent className="w-8 h-8 text-white" />
+                          </div>
+                          <div>
+                              <h3 className="text-xl font-bold mb-1">Süper İndirim Aktif!</h3>
+                              <p className="text-yellow-50 text-sm font-medium mb-2">
+                                  Tebrikler! Aboneliğiniz şu anda <strong>%{(user.discount.rate * 100)} indirimli</strong> olarak devam ediyor.
+                              </p>
+                              <div className="text-xs bg-black/20 inline-block px-3 py-1 rounded-full">
+                                  Bitiş Tarihi: {new Date(user.discount.endDate).toLocaleDateString('tr-TR')}
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              )}
+
               {/* Verification Status Card */}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
                  <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
@@ -269,7 +296,14 @@ const UserProfile: React.FC<UserProfileProps> = ({
                          {user.planId === 'free' ? '-' : new Date(new Date().setDate(new Date().getDate() + 30)).toLocaleDateString('tr-TR')}
                       </div>
                       <div className="text-xs text-slate-400 mt-2">
-                        {user.planId === 'free' ? 'Paket satın alındığında belirlenir.' : 'Bir sonraki fatura dönemine kadar geçerlidir.'}
+                        {user.discount && user.discount.isActive ? (
+                            <span className="text-green-600 font-bold flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> 
+                                Bir sonraki ödeme %50 indirimli
+                            </span>
+                        ) : (
+                            user.planId === 'free' ? 'Paket satın alındığında belirlenir.' : 'Bir sonraki fatura dönemine kadar geçerlidir.'
+                        )}
                       </div>
                    </div>
                 </div>

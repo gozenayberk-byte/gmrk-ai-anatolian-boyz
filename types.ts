@@ -47,6 +47,7 @@ export interface SubscriptionPlan {
   id: string;
   name: string;
   price: string;
+  originalPrice?: string; // İndirim durumunda eski fiyatı göstermek için
   period: string;
   description: string;
   iconKey: 'zap' | 'star' | 'building';
@@ -68,6 +69,12 @@ export interface User {
   phoneNumber?: string;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
+  // İndirim / Retention Alanları
+  discount?: {
+    isActive: boolean;
+    rate: number; // örn: 0.5 (%50)
+    endDate: string; // Bitiş tarihi string
+  };
 }
 
 export interface Testimonial {

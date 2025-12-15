@@ -149,11 +149,6 @@ export const storageService = {
     if (error) throw new Error("E-posta veya şifre hatalı.");
     if (!data.user) throw new Error("Giriş yapılamadı.");
 
-    // Note: Supabase JS client persists session by default in localStorage.
-    // If rememberMe is false, technically we should rely on sessionStorage or ephemeral state,
-    // but the client is initialized globally. For this implementation, success means
-    // the user is authenticated. The app checks session on load in App.tsx.
-
     return await storageService.getCurrentUserProfile();
   },
 
@@ -199,6 +194,16 @@ export const storageService = {
       };
     }
 
+    // İndirim bilgilerini kontrol et
+    let discount = undefined;
+    if (profile.discount_active) {
+        discount = {
+            isActive: profile.discount_active,
+            rate: profile.discount_rate || 0,
+            endDate: profile.discount_end_date || ''
+        };
+    }
+
     return {
       email: profile.email,
       name: profile.full_name,
@@ -209,7 +214,8 @@ export const storageService = {
       subscriptionStatus: profile.subscription_status,
       isEmailVerified: profile.is_email_verified,
       isPhoneVerified: profile.is_phone_verified,
-      phoneNumber: profile.phone_number
+      phoneNumber: profile.phone_number,
+      discount: discount
     };
   },
 
@@ -356,6 +362,7 @@ export const storageService = {
           newCredits = -1; 
       }
 
+      // Profili güncelle
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
@@ -368,6 +375,9 @@ export const storageService = {
       
       if (profileError) throw new Error("Profil güncellenemedi.");
 
+      // Ödemeyi kaydet (Gerçekte tutar indirimliyse indirimli tutar yazılır)
+      // Burada plan fiyatını yazıyoruz ama indirimliyse backend'de handle edilmesi gerekir.
+      // Basitlik adına şimdilik plan fiyatı.
       const billingRecord = {
           user_id: user.id,
           date: new Date().toLocaleDateString('tr-TR'),
@@ -386,25 +396,48 @@ export const storageService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Kullanıcı bulunamadı");
 
-      // Admin koruması
       if (user.email === 'admin@admin.com') {
           return await storageService.getCurrentUserProfile();
       }
 
-      // Kredileri sıfırla, planı 'free' yap, statüyü 'cancelled' yap
       const { error } = await supabase
         .from('profiles')
         .update({
             plan_id: 'free',
             credits: 0,
             title: 'Misafir Üye',
-            subscription_status: 'cancelled'
+            subscription_status: 'cancelled',
+            discount_active: false, // İptalde indirimi de sil
+            discount_rate: 0,
+            discount_end_date: null
         })
         .eq('id', user.id);
 
       if (error) throw new Error("Abonelik iptal edilirken hata oluştu.");
 
-      // Opsiyonel: İptal sebebi loglanabilir veya analytics'e gönderilebilir.
+      return await storageService.getCurrentUserProfile();
+  },
+
+  // YENİ: İndirim tanımlama fonksiyonu
+  applyRetentionOffer: async (): Promise<User> => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Kullanıcı bulunamadı");
+
+      // 3 Ay sonrası
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 3);
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+            discount_active: true,
+            discount_rate: 0.5, // %50
+            discount_end_date: endDate.toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) throw new Error("İndirim tanımlanamadı.");
+
       return await storageService.getCurrentUserProfile();
   },
 
