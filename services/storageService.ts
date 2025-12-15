@@ -377,6 +377,32 @@ export const storageService = {
       return await storageService.getCurrentUserProfile();
   },
 
+  cancelUserSubscription: async (): Promise<User> => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Kullanıcı bulunamadı");
+
+      // Admin koruması
+      if (user.email === 'admin@admin.com') {
+          return await storageService.getCurrentUserProfile();
+      }
+
+      // Kredileri sıfırla, planı 'free' yap, statüyü 'cancelled' yap
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+            plan_id: 'free',
+            credits: 0,
+            title: 'Misafir Üye',
+            subscription_status: 'cancelled'
+        })
+        .eq('id', user.id);
+
+      if (error) throw new Error("Abonelik iptal edilirken hata oluştu.");
+
+      // Opsiyonel: İptal sebebi loglanabilir veya analytics'e gönderilebilir.
+      return await storageService.getCurrentUserProfile();
+  },
+
   getUserBilling: async (userEmail: string): Promise<BillingHistory[]> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];

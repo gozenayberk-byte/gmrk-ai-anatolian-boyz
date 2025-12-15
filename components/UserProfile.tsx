@@ -8,6 +8,7 @@ import {
   ArrowUpRight, AlertTriangle, CheckCircle2, Zap, Gift, Smartphone, Mail, HelpCircle
 } from 'lucide-react';
 import GuideContent from './GuideContent';
+import CancelSubscriptionModal from './CancelSubscriptionModal';
 
 interface UserProfileProps {
   user: User;
@@ -20,20 +21,26 @@ interface UserProfileProps {
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({ 
-  user, 
+  user: initialUser, 
   onLogout, 
   onSelectHistory, 
-  onCancelSubscription,
+  onCancelSubscription: propCancelAction, // Ana App'ten gelen, biz burada iç state ile yöneteceğiz
   plans,
   onUpgradeClick,
   onOpenVerification
 }) => {
+  const [user, setUser] = useState<User>(initialUser);
   const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'billing' | 'guide'>('profile');
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [billing, setBilling] = useState<BillingHistory[]>([]);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   
   // İçeriği buradan alıyoruz
   const siteContent = storageService.getSiteContent();
+
+  useEffect(() => {
+    setUser(initialUser); // Prop değişirse state'i güncelle
+  }, [initialUser]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,6 +55,26 @@ const UserProfile: React.FC<UserProfileProps> = ({
   // Plan bulunamazsa (örneğin ID='free') fallback uygula
   const currentPlan = plans.find(p => p.id === user.planId);
   const planName = currentPlan ? currentPlan.name : (user.planId === 'free' ? "Ücretsiz Başlangıç" : "Bilinmeyen Paket");
+
+  // Handle Cancel Logic
+  const handleConfirmCancel = async () => {
+      try {
+          const updatedUser = await storageService.cancelUserSubscription();
+          setUser(updatedUser); // Update local state immediately
+          setIsCancelModalOpen(false);
+          alert("Aboneliğiniz başarıyla iptal edildi ve ücretsiz plana geçildi.");
+      } catch (error) {
+          console.error("Cancellation failed", error);
+          alert("İptal işlemi sırasında bir hata oluştu.");
+      }
+  };
+
+  const handleAcceptDiscount = () => {
+      setIsCancelModalOpen(false);
+      alert("Tebrikler! %50 İndirim bir sonraki fatura döneminizde otomatik olarak uygulanacaktır. GümrükAI ile kaldığınız için teşekkürler!");
+      // Gerçek bir backend olmadığı için sadece modalı kapatıp kullanıcıyı mutlu ediyoruz.
+      // Backend olsaydı burada 'applyDiscount' endpoint'ine istek atılırdı.
+  };
 
   // Helper component for Tabs
   const TabButton = ({ id, label, icon: Icon }: { id: typeof activeTab, label: string, icon: any }) => (
@@ -250,7 +277,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
                 {user.subscriptionStatus === 'active' && user.planId !== 'free' && (
                   <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
                     <button 
-                      onClick={onCancelSubscription}
+                      onClick={() => setIsCancelModalOpen(true)}
                       className="text-sm text-red-500 hover:text-red-700 hover:underline font-medium"
                     >
                       Aboneliği İptal Et
@@ -378,6 +405,15 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
         </div>
       </div>
+
+      {/* Cancel Modal */}
+      <CancelSubscriptionModal 
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        onConfirmCancel={handleConfirmCancel}
+        onAcceptDiscount={handleAcceptDiscount}
+        user={user}
+      />
     </div>
   );
 };

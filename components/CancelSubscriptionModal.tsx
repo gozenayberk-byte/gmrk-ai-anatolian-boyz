@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { X, AlertTriangle, ShieldAlert, HeartCrack, Gift, CheckCircle2, ArrowRight, StopCircle, ArrowLeft } from 'lucide-react';
+import { X, AlertTriangle, ShieldAlert, HeartCrack, Gift, CheckCircle2, ArrowRight, StopCircle, ArrowLeft, Trash2, FileWarning } from 'lucide-react';
 import { User } from '../types';
 
 interface CancelSubscriptionModalProps {
@@ -27,84 +28,94 @@ const CancelSubscriptionModal: React.FC<CancelSubscriptionModalProps> = ({
     }
   };
 
-  // STEP 1: Kayıp Vurgusu (Loss Aversion)
+  // STEP 1: Kayıp Vurgusu (Loss Aversion) - Neleri Kaybediyor?
   const Step1 = () => (
     <div className="space-y-6 animate-in slide-in-from-right duration-300">
-      <div className="bg-red-50 p-4 rounded-xl border border-red-100 flex items-start gap-4">
-        <div className="bg-white p-2 rounded-full shadow-sm">
-           <ShieldAlert className="w-8 h-8 text-red-600" />
-        </div>
-        <div>
-           <h3 className="font-bold text-red-900 text-lg">Güvenli Limandan Ayrılıyorsunuz!</h3>
-           <p className="text-red-700 text-sm mt-1">
-             Gümrük mevzuatı her gün değişiyor. Aboneliğinizi iptal ettiğinizde yapay zeka korumasını kaybedeceksiniz.
-           </p>
-        </div>
+      <div className="text-center mb-6">
+         <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-red-100">
+            <ShieldAlert className="w-10 h-10 text-red-600" />
+         </div>
+         <h3 className="text-2xl font-bold text-slate-900">Aboneliği İptal Etmek Üzeresiniz</h3>
+         <p className="text-slate-500 mt-2">
+           GümrükAI hesabınızı ücretsiz plana düşürdüğünüzde, şu <strong>kritik avantajları</strong> anında kaybedeceksiniz:
+         </p>
       </div>
       
-      <div className="space-y-3">
-        <h4 className="font-bold text-slate-800">Şunları kaybedeceksiniz:</h4>
-        <ul className="space-y-2">
-          <li className="flex items-center gap-2 text-slate-600">
-             <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs">X</div>
-             <span>Geçmiş {user.planId === '1' ? '50' : 'Sınırsız'} sorgu arşiviniz silinecek.</span>
-          </li>
-          <li className="flex items-center gap-2 text-slate-600">
-             <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs">X</div>
-             <span>Güncel vergi oranları bildirimleri duracak.</span>
-          </li>
-          <li className="flex items-center gap-2 text-slate-600">
-             <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs">X</div>
-             <span>Gemini 3.0 Pro'nun %99.9 doğruluk garantisi kalkacak.</span>
-          </li>
-        </ul>
+      <div className="bg-slate-50 rounded-xl p-5 border border-slate-200 space-y-4">
+        <div className="flex items-start gap-3">
+           <div className="bg-red-100 p-1.5 rounded text-red-600 mt-0.5">
+              <Trash2 className="w-4 h-4" />
+           </div>
+           <div>
+              <h4 className="font-bold text-slate-900 text-sm">Geçmiş Analiz Arşivi Silinir</h4>
+              <p className="text-xs text-slate-500 mt-0.5">Yaptığınız tüm GTIP, Vergi ve Mevzuat sorgularının geçmiş kayıtlarına erişiminiz kapanır.</p>
+           </div>
+        </div>
+        <div className="flex items-start gap-3">
+           <div className="bg-red-100 p-1.5 rounded text-red-600 mt-0.5">
+              <FileWarning className="w-4 h-4" />
+           </div>
+           <div>
+              <h4 className="font-bold text-slate-900 text-sm">Güncel Mevzuat Koruması Biter</h4>
+              <p className="text-xs text-slate-500 mt-0.5">Resmi Gazete'de yayınlanan yeni vergiler ve yasaklar hakkında yapay zeka uyarısı alamazsınız.</p>
+           </div>
+        </div>
+        <div className="flex items-start gap-3">
+           <div className="bg-red-100 p-1.5 rounded text-red-600 mt-0.5">
+              <AlertTriangle className="w-4 h-4" />
+           </div>
+           <div>
+              <h4 className="font-bold text-slate-900 text-sm">Sınırsız Sorgu Hakkı Kaybolur</h4>
+              <p className="text-xs text-slate-500 mt-0.5">Aylık sınırsız kullanım hakkınız, ayda 0 krediye düşer. Her analiz için tekrar ödeme yapmanız gerekir.</p>
+           </div>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 pt-4">
         <button 
           onClick={onClose} 
-          className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-lg shadow-brand-500/20 transition-all flex items-center justify-center gap-2"
+          className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-lg shadow-brand-500/20 transition-all flex items-center justify-center gap-2 transform active:scale-95"
         >
           <CheckCircle2 className="w-5 h-5" />
           Aboneliğimi Koru ve Devam Et
         </button>
         <button 
           onClick={() => setStep(2)} 
-          className="w-full py-3 bg-white border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-xl font-medium transition-all text-sm"
+          className="w-full py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl font-medium transition-colors text-sm"
         >
-          Riskleri Kabul Ediyorum, İlerle
+          Riskleri biliyorum, devam et
         </button>
       </div>
     </div>
   );
 
-  // STEP 2: Duygusal Bağ & Sorgulama (Feedback Loop)
+  // STEP 2: Neden Gidiyorsun? (Feedback)
   const Step2 = () => (
     <div className="space-y-6 text-center animate-in slide-in-from-right duration-300">
-       <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <HeartCrack className="w-10 h-10 text-slate-400" />
+       <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <HeartCrack className="w-8 h-8 text-slate-400" />
        </div>
        <h3 className="text-xl font-bold text-slate-900">Sizi Üzdük Mü?</h3>
-       <p className="text-slate-600">
-         GümrükAI ekibi olarak işinizi kolaylaştırmak için çok çalışıyoruz. Sorun fiyatsa, konuşabiliriz. Sorun özelliklerse, geliştirebiliriz.
+       <p className="text-slate-600 text-sm max-w-xs mx-auto">
+         Ayrılma nedeninizi bilirsek, kendimizi geliştirebiliriz. Lütfen dürüst olun.
        </p>
        
-       <div className="grid grid-cols-2 gap-3 text-left">
-          <label className="p-3 border border-slate-200 rounded-lg hover:border-brand-500 cursor-pointer transition-colors">
-             <input type="radio" name="reason" className="mr-2 accent-brand-600" />
-             <span className="text-sm text-slate-700">Çok pahalı</span>
+       <div className="grid grid-cols-1 gap-3 text-left">
+          <label className="flex items-center p-3 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50 cursor-pointer transition-all group">
+             <input type="radio" name="reason" className="mr-3 w-4 h-4 accent-brand-600" />
+             <span className="text-sm font-medium text-slate-700 group-hover:text-brand-700">Fiyat çok yüksek</span>
           </label>
-          <label className="p-3 border border-slate-200 rounded-lg hover:border-brand-500 cursor-pointer transition-colors">
-             <input type="radio" name="reason" className="mr-2 accent-brand-600" />
-             <span className="text-sm text-slate-700">İhtiyacım kalmadı</span>
+          <label className="flex items-center p-3 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50 cursor-pointer transition-all group">
+             <input type="radio" name="reason" className="mr-3 w-4 h-4 accent-brand-600" />
+             <span className="text-sm font-medium text-slate-700 group-hover:text-brand-700">Artık ihtiyacım kalmadı</span>
           </label>
-          <label className="p-3 border border-slate-200 rounded-lg hover:border-brand-500 cursor-pointer transition-colors">
-             <input type="radio" name="reason" className="mr-2 accent-brand-600" />
-             <span className="text-sm text-slate-700">Karışık geldi</span>
+          <label className="flex items-center p-3 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50 cursor-pointer transition-all group">
+             <input type="radio" name="reason" className="mr-3 w-4 h-4 accent-brand-600" />
+             <span className="text-sm font-medium text-slate-700 group-hover:text-brand-700">GTIP sonuçları yetersiz</span>
           </label>
-          <label className="p-3 border border-slate-200 rounded-lg hover:border-brand-500 cursor-pointer transition-colors">
-             <input type="radio" name="reason" className="mr-2 accent-brand-600" />
-             <span className="text-sm text-slate-700">Diğer</span>
+          <label className="flex items-center p-3 border border-slate-200 rounded-xl hover:border-brand-500 hover:bg-brand-50 cursor-pointer transition-all group">
+             <input type="radio" name="reason" className="mr-3 w-4 h-4 accent-brand-600" />
+             <span className="text-sm font-medium text-slate-700 group-hover:text-brand-700">Diğer</span>
           </label>
        </div>
 
@@ -117,70 +128,89 @@ const CancelSubscriptionModal: React.FC<CancelSubscriptionModalProps> = ({
         </button>
         <button 
           onClick={() => setStep(3)} 
-          className="flex-1 py-3 bg-white border border-red-200 text-red-600 font-medium rounded-xl hover:bg-red-50 transition-colors"
+          className="flex-1 py-3 bg-white border-2 border-slate-100 text-slate-400 font-medium rounded-xl hover:border-red-200 hover:text-red-600 transition-all"
         >
-          Yine de İptal Et
+          İlerle
         </button>
       </div>
     </div>
   );
 
-  // STEP 3: İndirim Teklifi (The Offer)
+  // STEP 3: Karşı Teklif (The Offer - 50% OFF)
   const Step3 = () => (
     <div className="space-y-6 text-center relative overflow-hidden animate-in slide-in-from-right duration-300">
-       <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 to-white -z-10"></div>
-       <div className="bg-yellow-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-          <Gift className="w-10 h-10 text-yellow-600" />
+       <div className="absolute inset-0 bg-gradient-to-b from-yellow-50/50 to-white -z-10"></div>
+       <div className="bg-yellow-400 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-yellow-400/40 animate-pulse">
+          <Gift className="w-12 h-12 text-white" />
        </div>
        
-       <h3 className="text-2xl font-black text-slate-900">BEKLE! SANA ÖZEL TEKLİFİMİZ VAR</h3>
-       <p className="text-slate-600">
-         Seni kaybetmek istemiyoruz. Aboneliğine devam edersen önümüzdeki 3 ay boyunca geçerli:
+       <h3 className="text-2xl font-black text-slate-900 leading-tight">
+         SON BİR ŞANS!<br/>
+         <span className="text-brand-600">SİZE ÖZEL %50 İNDİRİM</span>
+       </h3>
+       <p className="text-slate-600 text-sm px-4">
+         Aboneliğinizi iptal etmek yerine, önümüzdeki <strong>3 ay boyunca yarı fiyatına</strong> kullanmaya devam edin.
        </p>
 
-       <div className="bg-white border-2 border-yellow-400 border-dashed rounded-xl p-6 shadow-sm transform rotate-1 hover:rotate-0 transition-transform duration-300">
-          <div className="text-lg font-medium text-slate-500 line-through">
-             {user.planId === '1' ? '399 ₺' : '2.499 ₺'}
-          </div>
-          <div className="text-4xl font-black text-brand-600 mb-2">
-             %50 İNDİRİM
-          </div>
-          <div className="text-sm text-slate-500 font-medium">
-             Sadece <span className="text-slate-900 font-bold">{user.planId === '1' ? '199 ₺' : '1.249 ₺'} / ay</span> ödeyerek devam et.
+       <div className="relative mx-4 mt-6 mb-8 transform hover:scale-105 transition-transform duration-300">
+          <div className="absolute inset-0 bg-slate-900 rounded-2xl rotate-3 opacity-10"></div>
+          <div className="relative bg-white border-2 border-brand-500 border-dashed rounded-2xl p-6 shadow-xl">
+              <div className="flex justify-between items-end mb-2">
+                 <div className="text-left">
+                    <div className="text-xs text-slate-400 uppercase font-bold">Eski Fiyat</div>
+                    <div className="text-lg font-medium text-slate-400 line-through decoration-red-500 decoration-2">
+                        {user.planId === '1' ? '399 ₺' : '2.499 ₺'}
+                    </div>
+                 </div>
+                 <div className="text-right">
+                    <div className="text-xs text-brand-600 uppercase font-bold bg-brand-50 px-2 py-1 rounded">Yeni Fiyat</div>
+                    <div className="text-3xl font-black text-slate-900">
+                        {user.planId === '1' ? '199 ₺' : '1.249 ₺'}
+                    </div>
+                 </div>
+              </div>
+              <div className="w-full h-px bg-slate-100 my-3"></div>
+              <div className="flex items-center justify-center gap-2 text-xs font-bold text-green-600">
+                 <CheckCircle2 className="w-4 h-4" />
+                 Tüm Pro Özellikler Dahil
+              </div>
           </div>
        </div>
 
        <div className="flex flex-col gap-3 pt-2">
         <button 
           onClick={onAcceptDiscount} 
-          className="w-full py-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold shadow-lg shadow-brand-500/30 transition-all flex items-center justify-center gap-2 text-lg"
+          className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold shadow-xl shadow-slate-900/20 transition-all flex items-center justify-center gap-2 text-lg transform active:scale-95"
         >
-          <Gift className="w-5 h-5" />
-          Teklifi Kabul Et & %50 İndirimi Kap
+          <Gift className="w-5 h-5 text-yellow-400" />
+          %50 İndirimi Kabul Et
         </button>
         <button 
           onClick={() => setStep(4)} 
-          className="text-sm text-slate-400 hover:text-slate-600 underline decoration-slate-300 underline-offset-4"
+          className="text-sm text-slate-400 hover:text-slate-600 underline decoration-slate-300 underline-offset-4 py-2"
         >
-          İndirimi istemiyorum, iptal işlemine devam et
+          Hayır, indirimi istemiyorum ve iptal edeceğim
         </button>
       </div>
     </div>
   );
 
-  // STEP 4: Final Onay (Final Confirmation)
+  // STEP 4: Final Onay (Kesin Ayrılış)
   const Step4 = () => (
     <div className="space-y-6 text-center animate-in slide-in-from-right duration-300">
-       <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
+       <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-red-100">
           <StopCircle className="w-10 h-10 text-red-600" />
        </div>
-       <h3 className="text-xl font-bold text-slate-900">Son Kararınız Mı?</h3>
-       <p className="text-slate-600 text-sm">
-         İşlemi onayladığınızda hesabınız <strong>anında</strong> Ücretsiz Plana düşürülecek ve mevcut haklarınız silinecektir. Bu işlem geri alınamaz.
+       <h3 className="text-2xl font-bold text-slate-900">Son Kararınız Mı?</h3>
+       <p className="text-slate-600 text-sm px-4">
+         İşlemi onayladığınızda hesabınız <strong>anında</strong> "Ücretsiz Plan"a düşürülecek ve mevcut tüm kredileriniz/arşiviniz kalıcı olarak silinecektir.
        </p>
        
-       <div className="bg-slate-50 p-4 rounded-lg text-left text-xs text-slate-500 border border-slate-200">
-          Lütfen "İPTAL ET" yazarak onaylayın: (Simülasyon için gerek yok, butona basın)
+       <div className="bg-red-50 p-4 rounded-xl text-left border border-red-100 flex gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
+          <p className="text-xs text-red-800 font-medium">
+             Bu işlem geri alınamaz. İndirim hakkınızı da kaybedeceksiniz.
+          </p>
        </div>
 
        <div className="flex gap-3 pt-4">
@@ -192,7 +222,7 @@ const CancelSubscriptionModal: React.FC<CancelSubscriptionModalProps> = ({
         </button>
         <button 
           onClick={onConfirmCancel} 
-          className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-600/20 transition-colors"
+          className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all transform active:scale-95"
         >
           Aboneliği İptal Et
         </button>
@@ -200,10 +230,10 @@ const CancelSubscriptionModal: React.FC<CancelSubscriptionModalProps> = ({
       
       <button 
         onClick={() => setStep(3)}
-        className="mt-4 text-sm text-brand-600 font-medium hover:text-brand-700 flex items-center justify-center gap-1 mx-auto hover:underline"
+        className="mt-6 text-sm text-brand-600 font-bold hover:text-brand-700 flex items-center justify-center gap-1 mx-auto hover:underline"
       >
         <ArrowLeft className="w-4 h-4" />
-        Fikrimi değiştirdim, %50 indirimi kullanmak istiyorum
+        Dur! %50 İndirimi Kullanmak İstiyorum
       </button>
     </div>
   );
@@ -211,41 +241,40 @@ const CancelSubscriptionModal: React.FC<CancelSubscriptionModalProps> = ({
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
       <div 
-        className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm" 
+        className="absolute inset-0 bg-slate-900/90 backdrop-blur-md" 
         onClick={step === 1 ? onClose : undefined} 
       />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-300">
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-300">
+        {/* Progress Header */}
+        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
            <div className="flex items-center gap-3">
-              {/* Back Button - Only visible after step 1 */}
-              {step > 1 ? (
+              {step > 1 && (
                 <button 
                   onClick={handleBack}
-                  className="p-1 rounded-full hover:bg-slate-200 text-slate-500 transition-colors"
+                  className="p-1.5 rounded-full hover:bg-slate-200 text-slate-500 transition-colors"
                   title="Geri Dön"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-4 h-4" />
                 </button>
-              ) : (
-                <div className="w-7 h-7"></div> // Spacer to keep layout balanced
               )}
+              {step === 1 && <div className="w-7"></div>}
 
-              {/* Progress Dots */}
-              <div className="flex gap-1">
-                  <div className={`h-2 rounded-full transition-all duration-500 ${step >= 1 ? 'w-8 bg-red-500' : 'w-2 bg-slate-200'}`}></div>
-                  <div className={`h-2 rounded-full transition-all duration-500 ${step >= 2 ? 'w-8 bg-red-500' : 'w-2 bg-slate-200'}`}></div>
-                  <div className={`h-2 rounded-full transition-all duration-500 ${step >= 3 ? 'w-8 bg-red-500' : 'w-2 bg-slate-200'}`}></div>
-                  <div className={`h-2 rounded-full transition-all duration-500 ${step >= 4 ? 'w-8 bg-red-500' : 'w-2 bg-slate-200'}`}></div>
+              {/* Progress Bar */}
+              <div className="flex gap-1.5">
+                  <div className={`h-1.5 rounded-full transition-all duration-500 ${step >= 1 ? 'w-6 bg-red-500' : 'w-2 bg-slate-200'}`}></div>
+                  <div className={`h-1.5 rounded-full transition-all duration-500 ${step >= 2 ? 'w-6 bg-red-500' : 'w-2 bg-slate-200'}`}></div>
+                  <div className={`h-1.5 rounded-full transition-all duration-500 ${step >= 3 ? 'w-6 bg-red-500' : 'w-2 bg-slate-200'}`}></div>
+                  <div className={`h-1.5 rounded-full transition-all duration-500 ${step >= 4 ? 'w-6 bg-red-500' : 'w-2 bg-slate-200'}`}></div>
               </div>
            </div>
            
-           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+           <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
               <X className="w-5 h-5" />
            </button>
         </div>
         
-        <div className="p-6">
+        <div className="p-6 md:p-8">
            {step === 1 && <Step1 />}
            {step === 2 && <Step2 />}
            {step === 3 && <Step3 />}
