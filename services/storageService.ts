@@ -5,15 +5,15 @@ import { supabase } from "./supabaseClient";
 // Zenginleştirilmiş Fallback İçerik (Micro-SaaS & Pazarlama Odaklı)
 const FALLBACK_CONTENT: SiteContent = {
   hero: { 
-    badge: "🔥 2024'ün En Çok Tercih Edilen Gümrük Aracı", 
-    titleLine1: "Gümrük Müşavirine", 
-    titleLine2: "Binlerce Lira Ödemeyi Bırakın", 
-    description: "İthalat yaparken 'Acaba vergisi ne kadar?', 'GTIP kodu doğru mu?' stresine son. Yapay zeka, müşavirlerin saatlerce uğraştığı işi 10 saniyede, %99.9 doğrulukla ve sadece bir kahve parasına yapsın." 
+    badge: "🚀 İthalatın En Hızlı Yolu", 
+    titleLine1: "Gümrük Müşaviriniz", 
+    titleLine2: "Artık Cebinizde", 
+    description: "Karmaşık mevzuatları, GTIP kodlarını ve vergi hesaplarını unutun. Yapay zeka, ürününüzün fotoğrafından saniyeler içinde tüm gümrük analizini yapsın." 
   },
   productDemo: {
-    title: "Siz Sadece Fotoğrafı Yükleyin, Gerisini Bize Bırakın",
+    title: "Siz Sadece Fotoğrafı Yükleyin",
     description: "Karmaşık mevzuat kitapları arasında kaybolmayın. GümrükAI görseli tanır, mevzuatı tarar ve size net bir rapor sunar.",
-    imageUrl: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2426&q=80" // Placeholder
+    imageUrl: "https://images.unsplash.com/photo-1586769852044-692d6e3703f0?ixlib=rb-4.0.3&auto=format&fit=crop&w=2400&q=80"
   },
   painPoints: {
     title: "Bu Sorunlar Size Tanıdık Geliyor Mu?",
@@ -31,59 +31,55 @@ const FALLBACK_CONTENT: SiteContent = {
   },
   roi: { 
     badge: "NEDEN GÜMRÜKAI?", 
-    title: "Matematik Ortada: %95 Tasarruf", 
-    description: "Bir gümrük müşaviriyle çalışmak aylık minimum 5.000 TL'den başlar. GümrükAI ise aynı hizmeti size 2 kahve parasına sunar.", 
-    comparison1: "Geleneksel: 5.000 TL/Ay + Bekleme Süresi", 
-    comparison2: "GümrükAI: 399 TL/Ay + Anında Sonuç", 
-    comparison3: "Kazancınız: Yılda 55.000 TL ve yüzlerce saat." 
+    title: "2 Kahve Parasına Profesyonel Hizmet", 
+    description: "Geleneksel yöntemlerle günlerce süren ve binlerce liraya mal olan işlemleri, aylık sadece 399 TL'ye sınırsızca yapın.", 
+    comparison1: "Müşavir ücretlerinden %95 tasarruf", 
+    comparison2: "Hatalı GTIP cezalarından kurtulun", 
+    comparison3: "Saniyeler içinde sonuç alın" 
   },
   proSection: { 
-    badge: "PROFESYONELLER İÇİN", 
-    title: "Sadece Gümrük Değil, Ticaret İstihbaratı", 
-    subtitle: "Çin Fiyatları & Rakip Analizi", 
-    description: "Ürünün Çin'deki fabrikadan çıkış fiyatını (FOB) ve Türkiye'deki rakiplerinizin satış fiyatını tek ekranda görün. Karlılığınızı sipariş vermeden hesaplayın." 
+    badge: "E-TİCARETÇİLER İÇİN", 
+    title: "Çin'den Al, Türkiye'de Sat", 
+    subtitle: "Karlılık Hesaplama Aracı", 
+    description: "Sadece vergileri değil; ürünün Çin'deki alış fiyatını ve Türkiye'deki satış fiyatını kıyaslayarak size net kar marjını gösteriyoruz." 
   },
   corporate: { 
-    badge: "BÜYÜK OPERASYONLAR İÇİN", 
-    title: "Kurumsal Çözüm", 
-    subtitle: "API & Çoklu Kullanıcı", 
-    description: "Lojistik firmaları ve Gümrük Müşavirlik büroları için özel API desteği." 
+    badge: "EKİPLER İÇİN", 
+    title: "Büyüyen İşletmeler", 
+    subtitle: "Çoklu Yönetim", 
+    description: "Tüm ithalat operasyonunuzu tek ekrandan yönetin. Geçmiş sorgularınızı arşivleyin ve ekibinizle paylaşın." 
   },
   faq: { 
-    title: "Aklınıza Takılanlar", 
-    subtitle: "Şeffaf, net ve dürüst cevaplar.", 
+    title: "Merak Edilenler", 
+    subtitle: "Kafanızdaki soru işaretlerini giderelim", 
     items: [
-      { question: "Gerçekten %99.9 doğru mu?", answer: "Evet. Gemini 3.0 Pro modelimiz, Resmi Gazete ve Gümrük Tarife Cetveli ile eğitilmiştir. İnsan hatasını ortadan kaldırır." },
-      { question: "Telefonumdan kullanabilir miyim?", answer: "Kesinlikle. Çin'de fuardayken, üreticinin yanındayken fotoğraf çekip anında maliyet hesabı yapabilirsiniz." },
-      { question: "Ücretsiz deneme için kart girmem gerekiyor mu?", answer: "Hayır! Kredi kartı bilgisi vermeden, sadece doğrulama yaparak sistemi test edebilirsiniz." },
-      { question: "Faturamı gider gösterebilir miyim?", answer: "Evet, şirketimiz Türkiye'de kayıtlıdır ve yasal e-Fatura kesmektedir. Gider olarak kullanabilirsiniz." }
+      { question: "Sistem nasıl çalışıyor?", answer: "Çok basit! Ürünün fotoğrafını yüklüyorsunuz, yapay zeka (Gemini 3.0) görseli tarıyor ve güncel gümrük mevzuatına göre raporluyor." },
+      { question: "Telefondan kullanabilir miyim?", answer: "Evet, uygulamamız tam mobil uyumludur. Çin'de fuardayken bile fotoğraf çekip anında maliyet hesabı yapabilirsiniz." },
+      { question: "Ücretsiz deneme var mı?", answer: "Kesinlikle! Yeni üyelere sistemimizi test etmeleri için ücretsiz haklar tanımlıyoruz." },
+      { question: "Fatura alabilir miyim?", answer: "Tabii ki, ödemenizden hemen sonra kurumsal e-Faturanız mail adresinize gönderilir." },
+      { question: "GTIP kodları ne kadar güvenilir?", answer: "Modelimiz %99.9 doğruluk oranıyla çalışır ancak resmi beyanlarda gümrük müşavirinizle son teyidi yapmanızı öneririz." },
+      { question: "İstediğim zaman iptal edebilir miyim?", answer: "Evet, taahhüt yok. Memnun kalmazsanız panelden tek tıkla iptal edebilirsiniz." }
     ]
   },
   guide: { 
     sectionTitle: "Nasıl Kullanılır?", 
     starterTitle: "Hoşgeldin! {credits} Kredin Var.", 
-    starterDesc: "İthalat serüvenine başlamak için harika bir zaman. İşte kredilerini en verimli nasıl kullanacağına dair tüyolar:", 
-    strategy1Title: "Risk Analizi Yap", 
-    strategy1Desc: "Aklındaki ürünü yükle ve vergi oranlarını gör. Eğer vergiler %40'ın üzerindeyse, kar marjını tekrar hesapla.", 
+    starterDesc: "Hemen bir ürün fotoğrafı yükle ve siheri gör. İşte ipuçları:", 
+    strategy1Title: "Hızlı Tarama", 
+    strategy1Desc: "Ürünün fotoğrafını net çekmeye özen göster.", 
     strategy2Title: "Belge Kontrolü", 
-    strategy2Desc: "Ürünün TAREKS veya CE belgesi gerektirip gerektirmediğini öğren. Gümrükte malın takılmasını önle.", 
-    proTitle: "Profesyonel Özellikler", 
-    proFeature1Title: "Pazar Araştırması", 
-    proFeature1Desc: "Ürünün Çin'deki alış fiyatı ile Türkiye'deki satış fiyatını karşılaştır.", 
-    proFeature2Title: "Tedarikçi Maili", 
-    proFeature2Desc: "Tek tıkla profesyonel İngilizce fiyat teklifi (RFQ) maili oluştur." 
+    strategy2Desc: "Gümrükte takılmamak için 'Gerekli Evraklar' listesine mutlaka göz at.", 
+    proTitle: "Pro Özellikler", 
+    proFeature1Title: "Fiyat Analizi", 
+    proFeature1Desc: "Ürünün piyasa değerini öğren.", 
+    proFeature2Title: "Tedarikçi İletişimi", 
+    proFeature2Desc: "Hazır İngilizce mail taslaklarını kullan." 
   },
   testimonials: [
-    { id: '1', name: "Ahmet Y.", role: "Amazon FBA Satıcısı", comment: "Fuarda gezerken ürünün fotoğrafını çekip anında vergisini hesaplıyorum. Müşaviri arayıp beklemek tarih oldu. İnanılmaz hız.", rating: 5, avatarInitial: "A" },
-    { id: '2', name: "Selin K.", role: "Butik Sahibi", comment: "İlk başta inanmadım ama ücretsiz kredimle denedim. Çin'den getireceğim çantanın GTIP kodunu nokta atışı buldu.", rating: 5, avatarInitial: "S" },
-    { id: '3', name: "Mehmet D.", role: "Dış Ticaret Uzmanı", comment: "Ekibimdeki junior arkadaşların eğitimi için kullanıyoruz. Hem maliyetten hem zamandan tasarruf sağlıyor. Fiyatı bedava sayılır.", rating: 5, avatarInitial: "M" },
-    { id: '4', name: "Canan T.", role: "Girişimci", comment: "E-ticarete yeni başladım, gümrük mevzuatından korkuyordum. Bu uygulama sayesinde hangi ürünün yasaklı olduğunu anında görüyorum.", rating: 5, avatarInitial: "C" },
-    { id: '5', name: "Oğuzhan B.", role: "Dropshipper", comment: "Ürün araştırması yaparken vergileri hesaplamadan girmek intihar olurdu. GümrükAI benim risk analizcim.", rating: 4, avatarInitial: "O" },
-    { id: '6', name: "Elif R.", role: "İthalat Müdürü", comment: "Şirketimizde 10 kişi kullanıyoruz. Kurumsal paketle tüm geçmiş sorgularımızı arşivliyoruz. Excel tablolarından kurtulduk.", rating: 5, avatarInitial: "E" },
-    { id: '7', name: "Burak S.", role: "Teknoloji Editörü", comment: "Yapay zekanın bu kadar spesifik bir alanda bu kadar başarılı olması şaşırtıcı. Arayüzü çok temiz.", rating: 5, avatarInitial: "B" },
-    { id: '8', name: "Zeynep A.", role: "Kozmetik Markası", comment: "Kozmetik ithalatında belge süreçleri çok zorludur. GümrükAI hangi belgenin (MSDS vb.) gerektiğini söylüyor.", rating: 5, avatarInitial: "Z" },
-    { id: '9', name: "Hakan V.", role: "Lojistikçi", comment: "Müşterilerime hızlı fiyat vermek için kullanıyorum. Eskiden tarife cetvelinde saatlerce arardım.", rating: 4, avatarInitial: "H" },
-    { id: '10', name: "Pınar G.", role: "Etsy Satıcısı", comment: "Sadece ithalat değil, hammadde alırken de kullanıyorum. Aylık 399 TL bu hizmet için hiçbir şey.", rating: 5, avatarInitial: "P" }
+    { id: '1', name: "Selin Y.", role: "Amazon Satıcısı", comment: "İnanılmaz pratik. Fuar gezerken ürünün maliyetini hesaplamak için kullanıyorum. Hayat kurtarıcı!", rating: 5, avatarInitial: "S" },
+    { id: '2', name: "Burak K.", role: "İthalatçı", comment: "Eskiden müşavire sorup 1 gün beklediğim bilgiyi artık 10 saniyede öğreniyorum. Fiyatı bedava sayılır.", rating: 5, avatarInitial: "B" },
+    { id: '3', name: "Merve T.", role: "Girişimci", comment: "Arayüzü çok temiz, kullanımı çok kolay. Hiçbir teknik bilgiye gerek kalmadan gümrük işlerimi hallediyorum.", rating: 5, avatarInitial: "M" },
+    { id: '4', name: "Kaan D.", role: "Lojistik Uzmanı", comment: "Müşterilerime anlık fiyat vermek için kullanıyorum. GTIP tespitleri şaşırtıcı derecede doğru.", rating: 5, avatarInitial: "K" }
   ],
   updates: [],
   tracking: { metaPixelId: "", tiktokPixelId: "" },
@@ -91,8 +87,8 @@ const FALLBACK_CONTENT: SiteContent = {
   paymentSettings: { provider: 'iyzico', apiKey: '', secretKey: '', baseUrl: '' },
   footer: { 
     brandName: "GümrükAI", 
-    brandDesc: "İthalatçılar için geliştirilmiş en pratik yapay zeka asistanı. 2024 ©", 
-    copyright: "© 2024 GümrükAI Teknoloji A.Ş.", 
+    brandDesc: "İthalatçılar için geliştirilmiş en pratik yapay zeka asistanı.", 
+    copyright: "© 2024 GümrükAI", 
     badgeText: "İstanbul'da Geliştirildi ❤️", 
     socialLinks: { twitter: "#", linkedin: "#", instagram: "#" }, 
     legalContent: { privacy: "Gizlilik politikası...", terms: "Kullanım koşulları...", contact: "info@gumrukai.com" } 
@@ -117,7 +113,6 @@ export const storageService = {
     if (error) throw new Error(error.message);
     if (!data.user) throw new Error("Kullanıcı oluşturulamadı.");
 
-    // ADMIN OVERRIDE: Belirtilen email ise direkt admin yap
     if (email === 'admin@admin.com') {
       return {
         email: data.user.email!,
@@ -132,8 +127,6 @@ export const storageService = {
       };
     }
 
-    // YENİ KURAL: İlk kayıtta 0 kredi, 'free' plan, 'Misafir Üye' statüsü.
-    // Kullanıcı doğrulama yaptıkça kredi kazanacak.
     return {
       email: data.user.email!,
       name: name,
@@ -167,15 +160,14 @@ export const storageService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Oturum açılmamış.");
 
-    // ADMIN OVERRIDE: Veritabanı ne derse desin bu email Admin'dir.
     if (user.email === 'admin@admin.com') {
       return {
         email: user.email!,
         name: user.user_metadata.full_name || 'Süper Admin',
         title: 'Sistem Yöneticisi',
         role: 'admin',
-        planId: '3', // Kurumsal Paket
-        credits: -1, // Sınırsız
+        planId: '3', 
+        credits: -1, 
         subscriptionStatus: 'active',
         isEmailVerified: true,
         isPhoneVerified: true
@@ -189,8 +181,6 @@ export const storageService = {
       .single();
 
     if (error || !profile) {
-      // Profil veritabanında henüz oluşmadıysa veya hata varsa fallback
-      // YENİ KURAL: Fallback de 0 kredi ve 'free' plan olmalı.
       return {
         email: user.email!,
         name: user.user_metadata.full_name || 'Kullanıcı',
@@ -209,7 +199,7 @@ export const storageService = {
       name: profile.full_name,
       title: profile.title,
       role: profile.role || 'user', 
-      planId: profile.plan_id || 'free', // Veritabanında null ise free
+      planId: profile.plan_id || 'free',
       credits: profile.credits,
       subscriptionStatus: profile.subscription_status,
       isEmailVerified: profile.is_email_verified,
@@ -224,11 +214,7 @@ export const storageService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Kullanıcı oturumu yok.");
 
-    // Admin ise kredi düşme
-    if (userEmail === 'admin@admin.com') {
-        // Adminler için kredi düşülmez, sadece kayıt atılır.
-    } else {
-        // Kredi düşme işlemi (Sınırsız ise -1 kalır)
+    if (userEmail !== 'admin@admin.com') {
         const currentProfile = await storageService.getCurrentUserProfile();
         if (currentProfile.credits > 0) {
             await supabase.from('profiles').update({ credits: currentProfile.credits - 1 }).eq('id', user.id);
@@ -301,18 +287,36 @@ export const storageService = {
   // --- CONTENT & SETTINGS ---
 
   getSiteContent: (): SiteContent => {
-    // Bu metot senkron çalışmak zorunda olduğu yerler için fallback döner.
-    // Gerçek veri App.tsx içinde fetchSiteContent ile asenkron çekilir.
     return FALLBACK_CONTENT;
   },
   
   fetchSiteContent: async (): Promise<SiteContent> => {
     try {
       const { data, error } = await supabase.from('site_config').select('content').single();
-      if (error || !data) return FALLBACK_CONTENT;
       
-      // Fallback ile merge et (Eksik alanları tamamla)
-      return { ...FALLBACK_CONTENT, ...data.content };
+      if (error || !data || !data.content) return FALLBACK_CONTENT;
+      
+      const dbContent = data.content;
+
+      // SMART MERGE: 
+      // Eğer DB'den gelen veri boş ise (özellikle kritik array'ler), Fallback kullan.
+      // Bu, "boş SSS" veya "boş Yorumlar" sorununu çözer.
+      
+      return {
+        ...FALLBACK_CONTENT,
+        ...dbContent,
+        faq: {
+            ...FALLBACK_CONTENT.faq,
+            ...dbContent.faq,
+            items: (dbContent.faq?.items && dbContent.faq.items.length > 0) ? dbContent.faq.items : FALLBACK_CONTENT.faq.items
+        },
+        testimonials: (dbContent.testimonials && dbContent.testimonials.length > 0) ? dbContent.testimonials : FALLBACK_CONTENT.testimonials,
+        painPoints: {
+            ...FALLBACK_CONTENT.painPoints,
+            ...dbContent.painPoints,
+            items: (dbContent.painPoints?.items && dbContent.painPoints.items.length > 0) ? dbContent.painPoints.items : FALLBACK_CONTENT.painPoints.items
+        }
+      };
     } catch (e) {
       return FALLBACK_CONTENT;
     }
@@ -329,35 +333,24 @@ export const storageService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Kullanıcı bulunamadı");
 
-      // Admin paket değiştiremez/satın alamaz (koruma)
       if (user.email === 'admin@admin.com') {
           return await storageService.getCurrentUserProfile();
       }
 
       let newCredits = 0;
       let newTitle = 'Üye';
-
-      // YENİ KURAL: Plan mantığı
-      // 1: Girişimci -> 50 Kredi
-      // 2: Profesyonel -> Sınırsız (-1)
-      // 3: Kurumsal -> Sınırsız (-1)
       
       if (plan.id === '1') { 
           newTitle = 'Girişimci Üye'; 
           newCredits = 50; 
       } else if (plan.id === '2') { 
           newTitle = 'Profesyonel İthalatçı'; 
-          newCredits = -1; // Sınırsız
+          newCredits = -1; 
       } else if (plan.id === '3') { 
           newTitle = 'Kurumsal Üye'; 
-          newCredits = -1; // Sınırsız
-      } else {
-          // Fallback (Bilinmeyen paket)
-          newTitle = 'Üye';
-          newCredits = 0;
+          newCredits = -1; 
       }
 
-      // 1. Profili Güncelle
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
@@ -370,7 +363,6 @@ export const storageService = {
       
       if (profileError) throw new Error("Profil güncellenemedi.");
 
-      // 2. Fatura Kaydı Oluştur
       const billingRecord = {
           user_id: user.id,
           date: new Date().toLocaleDateString('tr-TR'),
@@ -406,7 +398,7 @@ export const storageService = {
       }));
   },
 
-  // --- ADMIN FUNCTIONS (CANLI VERİLER) ---
+  // --- ADMIN FUNCTIONS ---
   
   getAllUsers: async (): Promise<User[]> => {
       const { data, error } = await supabase
@@ -414,10 +406,7 @@ export const storageService = {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-          console.error("Admin user fetch error:", error);
-          return [];
-      }
+      if (error) return [];
 
       return data.map((p: any) => ({
           email: p.email,
@@ -438,7 +427,6 @@ export const storageService = {
   },
 
   getDashboardStats: async (): Promise<DashboardStats> => {
-      // 1. Toplam Ciro Hesapla
       const { data: billingData } = await supabase.from('billing_history').select('amount');
       let totalRevenue = 0;
       let totalSales = 0;
@@ -451,14 +439,10 @@ export const storageService = {
           });
       }
 
-      // 2. Kullanıcı Sayısı
       const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-
-      // 3. Analiz Sayısı
       const { count: analysisCount } = await supabase.from('analysis_history').select('*', { count: 'exact', head: true });
-
-      // 4. Plan Dağılımı
       const { data: profiles } = await supabase.from('profiles').select('plan_id');
+      
       let plan1 = 0, plan2 = 0, plan3 = 0;
       profiles?.forEach((p: any) => {
           if (p.plan_id === '1') plan1++;
@@ -504,7 +488,6 @@ export const storageService = {
   },
   
   verifyUserContact: async (email: string, type: 'email' | 'phone', code: string, phoneNumber?: string): Promise<{ success: boolean, message: string, user?: User }> => {
-      // Simüle edilmiş doğrulama
       if (code.length === 6) {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
@@ -513,8 +496,6 @@ export const storageService = {
                   updates.phone_number = phoneNumber;
               }
               
-              // YENİ KURAL: Doğrulama başına +1 kredi
-              // Bu fonksiyon mevcut krediyi okuyup üstüne eklediği için 0'dan 1'e, 1'den 2'ye çıkarır.
               const current = await storageService.getCurrentUserProfile();
               await supabase.from('profiles').update({ ...updates, credits: current.credits + 1 }).eq('id', user.id);
               

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AppState, CustomsAnalysis, SubscriptionPlan, User as UserType, HistoryItem, SiteContent } from './types';
 import { analyzeProductImage } from './services/geminiService';
 import { storageService } from './services/storageService';
@@ -131,6 +131,9 @@ const App: React.FC = () => {
   // Mobile Menu State
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Pixel Tracker Refs (Performance Fix)
+  const pixelInitialized = useRef(false);
+
   // SUPABASE SESSION CHECK ON MOUNT
   useEffect(() => {
     const checkSession = async () => {
@@ -161,8 +164,10 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Initialize Tracking Codes (Production Ready)
+  // Initialize Tracking Codes (Production Ready & Optimized)
   useEffect(() => {
+    if (pixelInitialized.current) return;
+    
     const tracking = siteContent.tracking;
     if (!tracking) return;
 
@@ -180,7 +185,8 @@ const App: React.FC = () => {
       try {
         window.fbq('init', tracking.metaPixelId);
         window.fbq('track', 'PageView');
-        console.log('Meta Pixel Initialized:', tracking.metaPixelId);
+        console.log('Meta Pixel Initialized');
+        pixelInitialized.current = true;
       } catch (e) { console.error('Meta Pixel Error', e); }
     }
 
@@ -195,7 +201,8 @@ const App: React.FC = () => {
       try {
         window.ttq.load(tracking.tiktokPixelId);
         window.ttq.page();
-        console.log('TikTok Pixel Initialized:', tracking.tiktokPixelId);
+        console.log('TikTok Pixel Initialized');
+        pixelInitialized.current = true;
       } catch(e) { console.error('TikTok Pixel Error', e); }
     }
 
@@ -427,15 +434,15 @@ const App: React.FC = () => {
                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-50 via-white to-white opacity-70"></div>
                  
                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-bold mb-8 border border-blue-100 animate-bounce cursor-default">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-bold mb-8 border border-blue-100 cursor-default">
                         <Coffee className="w-4 h-4" />
-                        <span>{siteContent.hero.badge}</span>
+                        <span>{siteContent.hero?.badge || "İthalatın Yeni Yolu"}</span>
                     </div>
                     
                     <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-slate-900 mb-8 tracking-tight leading-[1.1] max-w-5xl mx-auto">
-                        {siteContent.hero.titleLine1} <br/>
+                        {siteContent.hero?.titleLine1 || "Gümrük Müşaviriniz"} <br/>
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-indigo-600 relative inline-block">
-                          {siteContent.hero.titleLine2}
+                          {siteContent.hero?.titleLine2 || "Artık Cebinizde"}
                           <svg className="absolute w-full h-3 -bottom-2 left-0 text-brand-200/50 -z-10" viewBox="0 0 100 10" preserveAspectRatio="none">
                               <path d="M0 5 Q 50 15 100 5" stroke="currentColor" strokeWidth="12" fill="none" />
                           </svg>
@@ -443,7 +450,7 @@ const App: React.FC = () => {
                     </h1>
                     
                     <p className="text-xl md:text-2xl text-slate-500 mb-12 max-w-2xl mx-auto leading-relaxed font-light">
-                        {siteContent.hero.description}
+                        {siteContent.hero?.description}
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -473,8 +480,8 @@ const App: React.FC = () => {
               <section className="pb-32 -mt-20 relative z-20 px-4">
                   <div className="max-w-6xl mx-auto">
                       <div className="relative group">
-                          {/* Glow Effect */}
-                          <div className="absolute -inset-1 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                          {/* Glow Effect - Optimized: Removed animation for performance */}
+                          <div className="absolute -inset-1 bg-gradient-to-r from-brand-500 to-indigo-500 rounded-3xl blur opacity-25"></div>
                           
                           {/* Browser Window Mockup */}
                           <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
@@ -496,7 +503,7 @@ const App: React.FC = () => {
                                   {/* Left: Product Image & Basic Info */}
                                   <div className="lg:col-span-1 space-y-6">
                                       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                          <img src={siteContent.productDemo.imageUrl} alt="Demo Product" className="w-full h-48 object-cover rounded-lg mb-4" />
+                                          <img src={siteContent.productDemo?.imageUrl || "https://via.placeholder.com/400"} alt="Demo Product" className="w-full h-48 object-cover rounded-lg mb-4" />
                                           <h3 className="font-bold text-slate-900">Akıllı Robot Süpürge</h3>
                                           <p className="text-xs text-slate-500 mt-1">Ev tipi temizlik robotu, lityum bataryalı.</p>
                                       </div>
@@ -564,48 +571,50 @@ const App: React.FC = () => {
               </section>
 
               {/* MODÜL 3: PAIN vs SOLUTION */}
-              <section className="py-24 bg-slate-50 border-t border-slate-200">
-                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                      <div className="text-center max-w-3xl mx-auto mb-16">
-                          <h2 className="text-3xl font-bold text-slate-900 mb-4">{siteContent.painPoints.title}</h2>
-                          <p className="text-lg text-slate-500">{siteContent.painPoints.subtitle}</p>
-                      </div>
+              {siteContent.painPoints && (
+                <section className="py-24 bg-slate-50 border-t border-slate-200">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="text-center max-w-3xl mx-auto mb-16">
+                            <h2 className="text-3xl font-bold text-slate-900 mb-4">{siteContent.painPoints.title}</h2>
+                            <p className="text-lg text-slate-500">{siteContent.painPoints.subtitle}</p>
+                        </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                          {siteContent.painPoints.items.map((item, idx) => (
-                              <div key={idx} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                                  <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center mb-6">
-                                      {item.icon === 'clock' && <Clock className="w-8 h-8 text-red-500" />}
-                                      {item.icon === 'money' && <DollarSign className="w-8 h-8 text-red-500" />}
-                                      {item.icon === 'error' && <AlertTriangle className="w-8 h-8 text-red-500" />}
-                                  </div>
-                                  <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
-                                  <p className="text-slate-600 leading-relaxed">
-                                      {item.desc}
-                                  </p>
-                              </div>
-                          ))}
-                      </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {siteContent.painPoints.items.map((item, idx) => (
+                                <div key={idx} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center mb-6">
+                                        {item.icon === 'clock' && <Clock className="w-8 h-8 text-red-500" />}
+                                        {item.icon === 'money' && <DollarSign className="w-8 h-8 text-red-500" />}
+                                        {item.icon === 'error' && <AlertTriangle className="w-8 h-8 text-red-500" />}
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
+                                    <p className="text-slate-600 leading-relaxed">
+                                        {item.desc}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
 
-                      {/* The Solution Connector */}
-                      <div className="flex justify-center my-12">
-                          <div className="bg-white border border-slate-200 rounded-full p-2 shadow-sm animate-bounce">
-                              <ArrowRight className="w-6 h-6 text-slate-400 rotate-90" />
-                          </div>
-                      </div>
+                        {/* The Solution Connector */}
+                        <div className="flex justify-center my-12">
+                            <div className="bg-white border border-slate-200 rounded-full p-2 shadow-sm animate-bounce">
+                                <ArrowRight className="w-6 h-6 text-slate-400 rotate-90" />
+                            </div>
+                        </div>
 
-                      <div className="bg-brand-600 rounded-3xl p-8 md:p-12 text-white shadow-2xl shadow-brand-600/30 text-center relative overflow-hidden">
-                          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-                          <h3 className="text-3xl font-bold mb-6 relative z-10">Çözüm: GümrükAI ile 10 Saniyede Sonuç</h3>
-                          <p className="text-brand-100 text-lg max-w-2xl mx-auto mb-8 relative z-10">
-                              Yapay zeka teknolojimiz mevzuatı saniyesinde tarar, hatasız GTIP tespiti yapar ve tüm maliyetleri önüne serer. Beklemek yok, sürpriz maliyet yok.
-                          </p>
-                          <button onClick={() => setIsLoginModalOpen(true)} className="bg-white text-brand-700 px-8 py-3 rounded-xl font-bold hover:bg-brand-50 transition-colors relative z-10">
-                              Hemen Çözüme Ulaş
-                          </button>
-                      </div>
-                  </div>
-              </section>
+                        <div className="bg-brand-600 rounded-3xl p-8 md:p-12 text-white shadow-2xl shadow-brand-600/30 text-center relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                            <h3 className="text-3xl font-bold mb-6 relative z-10">Çözüm: GümrükAI ile 10 Saniyede Sonuç</h3>
+                            <p className="text-brand-100 text-lg max-w-2xl mx-auto mb-8 relative z-10">
+                                Yapay zeka teknolojimiz mevzuatı saniyesinde tarar, hatasız GTIP tespiti yapar ve tüm maliyetleri önüne serer. Beklemek yok, sürpriz maliyet yok.
+                            </p>
+                            <button onClick={() => setIsLoginModalOpen(true)} className="bg-white text-brand-700 px-8 py-3 rounded-xl font-bold hover:bg-brand-50 transition-colors relative z-10">
+                                Hemen Çözüme Ulaş
+                            </button>
+                        </div>
+                    </div>
+                </section>
+              )}
 
               {/* MODÜL 4: COST COMPARISON (2 Coffees) */}
               <section className="py-24 bg-white">
@@ -613,26 +622,26 @@ const App: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                           <div>
                               <div className="inline-block bg-brand-100 text-brand-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide mb-6">
-                                  {siteContent.roi.badge}
+                                  {siteContent.roi?.badge}
                               </div>
                               <h2 className="text-4xl font-black text-slate-900 mb-6 leading-tight">
-                                  {siteContent.roi.title}
+                                  {siteContent.roi?.title}
                               </h2>
                               <p className="text-lg text-slate-500 mb-8">
-                                  {siteContent.roi.description}
+                                  {siteContent.roi?.description}
                               </p>
                               <ul className="space-y-4">
                                   <li className="flex items-center gap-3">
                                       <XCircle className="w-6 h-6 text-red-500 flex-shrink-0" />
-                                      <span className="text-slate-600 font-medium line-through decoration-red-500/50">{siteContent.roi.comparison1}</span>
+                                      <span className="text-slate-600 font-medium line-through decoration-red-500/50">{siteContent.roi?.comparison1}</span>
                                   </li>
                                   <li className="flex items-center gap-3">
                                       <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0" />
-                                      <span className="text-slate-900 font-bold">{siteContent.roi.comparison2}</span>
+                                      <span className="text-slate-900 font-bold">{siteContent.roi?.comparison2}</span>
                                   </li>
                                   <li className="flex items-center gap-3">
                                       <TrendingUp className="w-6 h-6 text-brand-500 flex-shrink-0" />
-                                      <span className="text-brand-700 font-bold">{siteContent.roi.comparison3}</span>
+                                      <span className="text-brand-700 font-bold">{siteContent.roi?.comparison3}</span>
                                   </li>
                               </ul>
                           </div>
@@ -669,10 +678,10 @@ const App: React.FC = () => {
                           <Gift className="w-8 h-8 text-slate-900" />
                       </div>
                       <h2 className="text-3xl md:text-5xl font-black mb-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-500">
-                          {siteContent.freeCreditsPromo.title}
+                          {siteContent.freeCreditsPromo?.title || "Hediye Kredi"}
                       </h2>
                       <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
-                          {siteContent.freeCreditsPromo.description}
+                          {siteContent.freeCreditsPromo?.description || "Kayıt ol ve kazan."}
                       </p>
                       <button 
                           onClick={() => setIsLoginModalOpen(true)}
@@ -758,7 +767,7 @@ const App: React.FC = () => {
                   </div>
               </section>
 
-              {/* MODÜL 8: SOCIAL PROOF (10 Testimonials) */}
+              {/* MODÜL 8: SOCIAL PROOF (Testimonials) */}
               <section className="py-24 bg-white border-t border-slate-100">
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                       <div className="text-center mb-16">
@@ -766,58 +775,66 @@ const App: React.FC = () => {
                           <p className="text-slate-500 mt-2">GümrükAI kullananlar zamandan ve paradan nasıl tasarruf etti?</p>
                       </div>
                       
-                      {/* Grid Layout for Testimonials */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr">
-                          {siteContent.testimonials.map((t) => (
-                              <div key={t.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-brand-200 hover:shadow-md transition-all flex flex-col">
-                                  <div className="flex items-center gap-3 mb-4">
-                                      <div className="w-10 h-10 bg-gradient-to-br from-slate-700 to-slate-900 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-                                          {t.avatarInitial}
-                                      </div>
-                                      <div>
-                                          <div className="font-bold text-slate-900 text-sm">{t.name}</div>
-                                          <div className="text-xs text-slate-500">{t.role}</div>
-                                      </div>
-                                  </div>
-                                  <div className="flex mb-3">
-                                      {[...Array(5)].map((_, i) => (
-                                          <Star key={i} className={`w-3 h-3 ${i < t.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
-                                      ))}
-                                  </div>
-                                  <p className="text-slate-600 text-xs leading-relaxed flex-1 italic relative">
-                                      <Quote className="w-4 h-4 text-slate-300 absolute -top-1 -left-1 transform -scale-x-100 opacity-50" />
-                                      <span className="ml-4">{t.comment}</span>
-                                  </p>
-                              </div>
-                          ))}
-                      </div>
+                      {/* Grid Layout for Testimonials - SAFE RENDER CHECK */}
+                      {siteContent.testimonials && siteContent.testimonials.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr">
+                            {siteContent.testimonials.map((t) => (
+                                <div key={t.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-brand-200 hover:shadow-md transition-all flex flex-col">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-10 h-10 bg-gradient-to-br from-slate-700 to-slate-900 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                            {t.avatarInitial}
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-slate-900 text-sm">{t.name}</div>
+                                            <div className="text-xs text-slate-500">{t.role}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex mb-3">
+                                        {[...Array(5)].map((_, i) => (
+                                            <Star key={i} className={`w-3 h-3 ${i < t.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
+                                        ))}
+                                    </div>
+                                    <p className="text-slate-600 text-xs leading-relaxed flex-1 italic relative">
+                                        <Quote className="w-4 h-4 text-slate-300 absolute -top-1 -left-1 transform -scale-x-100 opacity-50" />
+                                        <span className="ml-4">{t.comment}</span>
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="text-center text-slate-400">Yorumlar yükleniyor...</div>
+                      )}
                   </div>
               </section>
 
-              {/* MODÜL 9: FAQ */}
+              {/* MODÜL 9: FAQ - SAFE RENDER CHECK */}
               <section className="py-24 bg-slate-50">
                   <div className="max-w-3xl mx-auto px-4">
                       <div className="text-center mb-12">
-                          <h2 className="text-3xl font-bold text-slate-900">{siteContent.faq.title}</h2>
-                          <p className="text-slate-500">{siteContent.faq.subtitle}</p>
+                          <h2 className="text-3xl font-bold text-slate-900">{siteContent.faq?.title || "Sıkça Sorulan Sorular"}</h2>
+                          <p className="text-slate-500">{siteContent.faq?.subtitle || "Merak ettikleriniz"}</p>
                       </div>
                       <div className="space-y-4">
-                          {siteContent.faq.items.map((item, idx) => (
-                              <div key={idx} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                                  <button 
-                                      onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
-                                      className="w-full px-6 py-4 text-left flex justify-between items-center font-bold text-slate-800 hover:bg-slate-50 transition-colors"
-                                  >
-                                      {item.question}
-                                      {openFaqIndex === idx ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-                                  </button>
-                                  {openFaqIndex === idx && (
-                                      <div className="px-6 pb-6 pt-2 text-slate-600 text-sm leading-relaxed border-t border-slate-100">
-                                          {item.answer}
-                                      </div>
-                                  )}
-                              </div>
-                          ))}
+                          {siteContent.faq?.items && siteContent.faq.items.length > 0 ? (
+                            siteContent.faq.items.map((item, idx) => (
+                                <div key={idx} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                                    <button 
+                                        onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
+                                        className="w-full px-6 py-4 text-left flex justify-between items-center font-bold text-slate-800 hover:bg-slate-50 transition-colors"
+                                    >
+                                        {item.question}
+                                        {openFaqIndex === idx ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                                    </button>
+                                    {openFaqIndex === idx && (
+                                        <div className="px-6 pb-6 pt-2 text-slate-600 text-sm leading-relaxed border-t border-slate-100">
+                                            {item.answer}
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                          ) : (
+                            <div className="text-center text-slate-400">Sıkça sorulan sorular hazırlanıyor...</div>
+                          )}
                       </div>
                   </div>
               </section>
