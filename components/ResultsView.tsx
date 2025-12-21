@@ -206,6 +206,30 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
       </div>
 
+      {/* Grounding Sources - Required by Gemini API guidelines when using googleSearch grounding tool */}
+      {analysis.groundingSources && analysis.groundingSources.length > 0 && (
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <Globe2 className="w-5 h-5 text-brand-600" />
+            Doğrulama Kaynakları (Google Arama)
+          </h3>
+          <div className="flex flex-wrap gap-3">
+            {analysis.groundingSources.map((source, idx) => (
+              <a 
+                key={idx}
+                href={source.uri}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-brand-50 hover:text-brand-600 hover:border-brand-200 transition-all"
+              >
+                <Globe2 className="w-3 h-3" />
+                {source.title}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Price Analysis Section - LOCKED FOR PLAN 1 & GUEST */}
       <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2 mt-4">
         <TrendingUp className="w-6 h-6 text-brand-600" />
@@ -270,7 +294,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-gray-800">Tedarikçi Talep Metni</h3>
-              <p className="text-xs text-gray-500">Otomatik oluşturulmuş İngilizce RFQ taslağı</p>
+              <p className="text-xs text-slate-500">Otomatik oluşturulmuş İngilizce RFQ taslağı</p>
             </div>
           </div>
           <button 

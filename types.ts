@@ -1,4 +1,5 @@
 
+
 export interface CustomsAnalysis {
   productName: string;
   description: string;
@@ -10,6 +11,8 @@ export interface CustomsAnalysis {
   confidenceScore: number;
   importPrice: string; // Çin FOB Fiyatı
   retailPrice: string; // Türkiye Pazar Fiyatı
+  // Always include groundingSources when using Google Search tool
+  groundingSources?: { title: string; uri: string }[];
 }
 
 export interface HistoryItem extends CustomsAnalysis {
