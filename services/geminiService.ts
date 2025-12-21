@@ -22,9 +22,9 @@ const fileToGenerativePart = async (file: File): Promise<string> => {
  * Analyzes the product image using Gemini 3.0 Pro.
  */
 export const analyzeProductImage = async (file: File): Promise<CustomsAnalysis> => {
-  // @google/genai SDK kuralları gereği API_KEY'i process.env üzerinden almalıyız.
-  // Vite config 'define' bloğu bu değeri build anında buraya gömer.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Use process.env.API_KEY exclusively as per Google GenAI SDK guidelines.
+  // We assume process.env.API_KEY is defined in the environment (via vite.config.ts define).
+  const ai = new GoogleGenAI({ apiKey: (process.env as any).API_KEY });
 
   try {
     const base64Data = await fileToGenerativePart(file);
@@ -58,7 +58,6 @@ export const analyzeProductImage = async (file: File): Promise<CustomsAnalysis> 
       }
     `;
 
-    // Gemini 3 Pro modelini kullanıyoruz
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: [{
@@ -76,7 +75,7 @@ export const analyzeProductImage = async (file: File): Promise<CustomsAnalysis> 
     const text = response.text;
     if (!text) throw new Error("Yapay zeka yanıt vermedi.");
 
-    // Google Arama kaynaklarını çıkarıyoruz
+    // Extract grounding sources as required by Gemini API guidelines when using googleSearch
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     const groundingSources: { title: string; uri: string }[] = [];
     if (groundingChunks) {
@@ -98,6 +97,7 @@ export const analyzeProductImage = async (file: File): Promise<CustomsAnalysis> 
     }
 
     const analysis = JSON.parse(cleanText) as CustomsAnalysis;
+    // Append grounding sources to the result
     analysis.groundingSources = groundingSources;
 
     return analysis;
