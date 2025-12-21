@@ -1,12 +1,26 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Use process.env cast to any to avoid TypeScript errors for non-standard environments
-const supabaseUrl = (process.env as any).VITE_SUPABASE_URL || 'https://maecmjkmrgdvnskgcgii.supabase.co';
-const supabaseAnonKey = (process.env as any).VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hZWNtamttcmdkdm5za2djZ2lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3MzYxNTMsImV4cCI6MjA4MTMxMjE1M30._WwhYqpPNtsBrad4rFEG4eQBAv4HEzo_18JSpxNtog4';
+/**
+ * ÖNEMLİ: Vite 'define' özelliğini kullandığı için process.env.DEGISKEN_ADI 
+ * ifadesini kodun içinde tam olarak (as any kullanmadan) yazmalıyız. 
+ */
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || supabaseUrl === 'undefined') {
-  console.warn("Supabase URL tanımlanmamış. Yerel veritabanı modunda çalışılacak.");
+// Eğer anahtarlar eksikse createClient hata fırlatır. 
+// Bu yüzden anahtarların varlığını kontrol ediyoruz ve yoksa kullanıcıyı uyarıyoruz.
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error(
+    "HATA: Supabase bağlantı anahtarları bulunamadı!\n" +
+    "Lütfen .env dosyanızda VITE_SUPABASE_URL ve VITE_SUPABASE_ANON_KEY değerlerini kontrol edin.\n" +
+    "Uygulama düzgün çalışmayabilir."
+  );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// createClient'ın 'is required' hatası vermemesi için boş değer gelirse 
+// placeholder gönderiyoruz, ancak yukarıdaki konsol hatası asıl sorunu işaret edecektir.
+export const supabase = createClient(
+  supabaseUrl || 'https://missing-url.supabase.co', 
+  supabaseAnonKey || 'missing-key'
+);

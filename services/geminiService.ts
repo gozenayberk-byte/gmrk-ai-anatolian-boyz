@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { CustomsAnalysis } from "../types";
 
 /**
- * Encodes a File object to Base64 string.
+ * Dosyayı Base64 formatına çevirir.
  */
 const fileToGenerativePart = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -19,12 +19,11 @@ const fileToGenerativePart = async (file: File): Promise<string> => {
 };
 
 /**
- * Analyzes the product image using Gemini 3.0 Pro.
+ * Ürün görselini Gemini 3.0 Pro kullanarak analiz eder.
  */
 export const analyzeProductImage = async (file: File): Promise<CustomsAnalysis> => {
-  // Use process.env.API_KEY exclusively as per Google GenAI SDK guidelines.
-  // We assume process.env.API_KEY is defined in the environment (via vite.config.ts define).
-  const ai = new GoogleGenAI({ apiKey: (process.env as any).API_KEY });
+  // SDK kuralları gereği apiKey isimlendirilmiş parametre olarak process.env.API_KEY'den alınır.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   try {
     const base64Data = await fileToGenerativePart(file);
@@ -75,7 +74,7 @@ export const analyzeProductImage = async (file: File): Promise<CustomsAnalysis> 
     const text = response.text;
     if (!text) throw new Error("Yapay zeka yanıt vermedi.");
 
-    // Extract grounding sources as required by Gemini API guidelines when using googleSearch
+    // Google Search Grounding kaynaklarını ayıkla
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     const groundingSources: { title: string; uri: string }[] = [];
     if (groundingChunks) {
@@ -97,13 +96,12 @@ export const analyzeProductImage = async (file: File): Promise<CustomsAnalysis> 
     }
 
     const analysis = JSON.parse(cleanText) as CustomsAnalysis;
-    // Append grounding sources to the result
     analysis.groundingSources = groundingSources;
 
     return analysis;
 
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
-    throw new Error(error.message || "Görsel analiz edilirken bir hata oluştu. Lütfen bağlantınızı ve API anahtarınızı kontrol edin.");
+    console.error("Gemini API Hatası:", error);
+    throw new Error(error.message || "Görsel analiz edilirken bir hata oluştu. Lütfen bağlantınızı ve .env dosyanızdaki API anahtarınızı kontrol edin.");
   }
 };
