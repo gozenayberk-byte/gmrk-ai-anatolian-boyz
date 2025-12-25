@@ -79,7 +79,6 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [plans, setPlans] = useState<SubscriptionPlan[]>(INITIAL_PLANS);
   const [siteContent, setSiteContent] = useState<SiteContent>(storageService.getSiteContent());
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -91,10 +90,13 @@ const App: React.FC = () => {
     };
     checkSession();
     storageService.fetchSiteContent().then(content => setSiteContent(content));
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_IN') {
-        const currentUser = await storageService.getCurrentUserProfile();
-        setUser(currentUser);
+        try {
+          const currentUser = await storageService.getCurrentUserProfile();
+          setUser(currentUser);
+        } catch (e) { console.error("Session update error:", e); }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setAppState(AppState.IDLE);
@@ -122,7 +124,7 @@ const App: React.FC = () => {
       return;
     }
     if (user.credits === 0 && user.planId === 'free') {
-       setErrorMsg("Sorgu hakkınız dolmuştur. Kredi kazanmak için hesabınızı doğrulayın veya bir paket satın alın.");
+       setErrorMsg("Sorgu hakkınız dolmuştur. Bir paket satın alarak devam edebilirsiniz.");
        setAppState(AppState.ERROR);
        return;
     }
@@ -181,14 +183,12 @@ const App: React.FC = () => {
   const handleOpenPricing = () => setIsPricingModalOpen(true);
   const handleHistoryClick = () => { if(user) setAppState(AppState.HISTORY); else setIsLoginModalOpen(true); };
 
-  // Fix: Added missing handleSelectHistory to display results from query history
   const handleSelectHistory = (item: HistoryItem) => {
     setAnalysisResult(item);
-    setImagePreview(null); // Clear preview as history items don't store the source file object
+    setImagePreview(null);
     setAppState(AppState.SUCCESS);
   };
 
-  // Fix: Added missing onOpenVerification to open the verification modal
   const onOpenVerification = () => setIsVerificationModalOpen(true);
 
   const handleSelectPlan = (plan: SubscriptionPlan) => {
@@ -309,16 +309,9 @@ const App: React.FC = () => {
                 <button onClick={handleReset} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">
                   <RefreshCcw className="w-5 h-5" /> Tekrar Dene
                 </button>
-                {user?.credits === 0 && (
-                   <div className="flex flex-col sm:flex-row gap-4">
-                      <button onClick={onOpenVerification} className="flex items-center gap-2 px-6 py-3 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 transition-colors">
-                        <Gift className="w-5 h-5" /> Kredi Kazan
-                      </button>
-                      <button onClick={scrollToPricing} className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-colors">
-                        <Zap className="w-5 h-5" /> Paket Satın Al
-                      </button>
-                   </div>
-                )}
+                <button onClick={scrollToPricing} className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-colors">
+                  <Zap className="w-5 h-5" /> Paket Satın Al
+                </button>
               </div>
            </div>
         )}
@@ -336,7 +329,9 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <Footer content={siteContent.footer} onHomeClick={handleGoHome} onHistoryClick={handleHistoryClick} onPricingClick={scrollToPricing} onOpenPrivacy={() => setActiveLegalModal('privacy')} onOpenTerms={() => setActiveLegalModal('terms')} onOpenContact={() => setActiveLegalModal('contact')} onOpenUpdates={() => setIsUpdatesModalOpen(true)} />
+      {siteContent && siteContent.footer && (
+        <Footer content={siteContent.footer} onHomeClick={handleGoHome} onHistoryClick={handleHistoryClick} onPricingClick={scrollToPricing} onOpenPrivacy={() => setActiveLegalModal('privacy')} onOpenTerms={() => setActiveLegalModal('terms')} onOpenContact={() => setActiveLegalModal('contact')} onOpenUpdates={() => setIsUpdatesModalOpen(true)} />
+      )}
       
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} onLogin={handleLoginSubmitInModal} />
       <PricingModal isOpen={isPricingModalOpen} onClose={() => setIsPricingModalOpen(false)} plans={plans} onSelectPlan={handleSelectPlan} />

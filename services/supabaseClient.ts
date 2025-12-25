@@ -1,25 +1,33 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+// Vite define block allows process.env access, fallback to empty string
 const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
 
-// Bağlantı anahtarlarının geçerli olup olmadığını kontrol et
 export const isSupabaseConfigured = (): boolean => {
-  return Boolean(supabaseUrl && supabaseUrl.includes('supabase.co') && supabaseAnonKey);
+  // Check if keys are present and look valid (url contains supabase.co)
+  return Boolean(
+    supabaseUrl && 
+    supabaseUrl.length > 10 && 
+    supabaseUrl.includes('supabase.co') && 
+    supabaseAnonKey && 
+    supabaseAnonKey.length > 20
+  );
 };
 
-// Eğer anahtarlar yoksa, dummy (sahte) bir URL ile başlatarak SDK'nın çökmesini önle.
-// storageService bu durumda otomatik olarak LocalStorage (Mock Modu) kullanacaktır.
-const safeUrl = isSupabaseConfigured() ? supabaseUrl : 'https://unconfigured.supabase.co';
-const safeKey = isSupabaseConfigured() ? supabaseAnonKey : 'unconfigured';
+const safeUrl = isSupabaseConfigured() ? supabaseUrl : 'https://placeholder-project.supabase.co';
+const safeKey = isSupabaseConfigured() ? supabaseAnonKey : 'placeholder-key-not-set';
 
+export const supabase = createClient(safeUrl, safeKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
+
+// Bilgilendirme logu (Geliştirme aşamasında yardımcı olması için)
 if (!isSupabaseConfigured()) {
-  console.warn(
-    "GümrükAI: Supabase bağlantı anahtarları eksik. \n" +
-    "Uygulama şu an 'Yerel Mod'da çalışıyor (Veriler tarayıcınızda saklanır).\n" +
-    "Bulut tabanlı kayıt ve kullanıcı yönetimi için .env dosyanıza VITE_SUPABASE_URL ve VITE_SUPABASE_ANON_KEY ekleyin."
-  );
+  console.warn("Supabase API anahtarları henüz yüklenmemiş veya geçersiz. Lütfen .env dosyasını ve build sürecini kontrol edin.");
 }
-
-export const supabase = createClient(safeUrl, safeKey);
