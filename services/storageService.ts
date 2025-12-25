@@ -1,493 +1,327 @@
 
-import { CustomsAnalysis, HistoryItem, SiteContent, BillingHistory, User, DashboardStats, SubscriptionPlan } from "../types";
-import { supabase } from "./supabaseClient";
+import { CustomsAnalysis, HistoryItem, User, SubscriptionPlan, SiteContent, DashboardStats, BillingHistory } from "../types";
+import { supabase, isSupabaseConfigured } from "./supabaseClient";
 
-// Mock Session Key for LocalStorage
-const MOCK_SESSION_KEY = 'gumrukai_mock_session';
-const MOCK_HISTORY_PREFIX = 'gumrukai_mock_history_';
+const MOCK_SESSION_KEY = 'gumrukai_session';
+const SITE_CONTENT_KEY = 'gumrukai_site_content';
+const MOCK_HISTORY_PREFIX = 'gumrukai_history_';
 
-// Zenginleştirilmiş Fallback İçerik (Micro-SaaS & Pazarlama Odaklı)
-const FALLBACK_CONTENT: SiteContent = {
-  hero: { 
-    badge: "🚀 İthalatın En Hızlı Yolu", 
-    titleLine1: "Gümrük Müşaviriniz", 
-    titleLine2: "Artık Cebinizde", 
-    description: "Karmaşık mevzuatları, GTIP kodlarını ve vergi hesaplarını unutun. Yapay zeka, ürününüzün fotoğrafından saniyeler içinde tüm gümrük analizini yapsın." 
+const DEFAULT_CONTENT: SiteContent = {
+  hero: {
+    badge: "2025 GÜNCEL MEVZUAT",
+    titleLine1: "Gümrük İşlemlerinizi",
+    titleLine2: "Yapay Zeka ile Çözün",
+    description: "Sadece bir fotoğraf ile GTIP kodunu tespit edin, vergi oranlarını hesaplayın ve dış ticaret risklerinizi minimize edin."
   },
   productDemo: {
-    title: "Siz Sadece Fotoğrafı Yükleyin",
-    description: "Karmaşık mevzuat kitapları arasında kaybolmayın. GümrükAI görseli tanır, mevzuatı tarar ve size net bir rapor sunar.",
-    imageUrl: "https://images.unsplash.com/photo-1586769852044-692d6e3703f0?ixlib=rb-4.0.3&auto=format&fit=crop&w=2400&q=80"
+    title: "Akıllı Analiz",
+    description: "Görsel tanıma teknolojisi ile GTIP tespiti.",
+    imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=1000"
   },
   painPoints: {
-    title: "Bu Sorunlar Size Tanıdık Geliyor Mu?",
-    subtitle: "Geleneksel ithalat süreçleri hem cebinizi hem vaktinizi yakar.",
-    items: [
-      { icon: "clock", title: "Günlerce Beklemek", desc: "Müşavirinize mail atıp dönüş beklemek işinizi yavaşlatır." },
-      { icon: "money", title: "Yüksek Maliyetler", desc: "Basit bir GTIP sorgusu için bile danışmanlık ücreti ödersiniz." },
-      { icon: "error", title: "Hatalı Beyan Riski", desc: "Yanlış GTIP tespiti, gümrükte malın takılmasına ve ağır cezalara yol açar." }
-    ]
+    title: "Dış Ticaretin Zorluklarını Aşıyoruz",
+    subtitle: "Geleneksel yöntemler yavaş ve hata payı yüksek. GümrükAI ile hızlanın.",
+    items: []
   },
-  freeCreditsPromo: { 
-    isActive: true, 
-    title: "RİSKSİZ DENE: 2 KREDİ HEDİYE!", 
-    description: "Sistemimize o kadar güveniyoruz ki, para ödemeden test etmenizi istiyoruz. Sadece telefon ve mailini doğrula, anında 2 gerçek analiz hakkı kazan." 
+  freeCreditsPromo: { isActive: true, title: "Hediye Kredi", description: "Doğrula ve kazan." },
+  roi: { badge: "ROI", title: "Kazanç", description: "Zaman ve para tasarrufu.", comparison1: "-", comparison2: "-", comparison3: "-" },
+  proSection: { badge: "PRO", title: "Pro", subtitle: "Sürüm", description: "Detaylar" },
+  corporate: { badge: "Kurumsal", title: "Yönetim", subtitle: "Ekip", description: "Özellikler" },
+  faq: {
+    title: "Sıkça Sorulan Sorular",
+    subtitle: "Merak edilenler",
+    items: []
   },
-  roi: { 
-    badge: "NEDEN GÜMRÜKAI?", 
-    title: "2 Kahve Parasına Profesyonel Hizmet", 
-    description: "Geleneksel yöntemlerle günlerce süren ve binlerce liraya mal olan işlemleri, aylık sadece 399 TL'ye sınırsızca yapın.", 
-    comparison1: "Müşavir ücretlerinden %95 tasarruf", 
-    comparison2: "Hatalı GTIP cezalarından kurtulun", 
-    comparison3: "Saniyeler içinde sonuç alın" 
+  guide: {
+    sectionTitle: "Kullanım Rehberi",
+    starterTitle: "Hoş Geldiniz! {credits} Krediniz Var",
+    starterDesc: "Sistemi kullanmaya başlamak için bir ürün fotoğrafı yükleyin.",
+    strategy1Title: "Hızlı GTIP Tespiti",
+    strategy1Desc: "Görsel analizi ile en yakın GTIP kodlarını listeleyin.",
+    strategy2Title: "Mevzuat Kontrolü",
+    strategy2Desc: "İlgili GTIP için gerekli belgeleri görün.",
+    proTitle: "Pro Özellikler",
+    proFeature1Title: "Pazar Analizi",
+    proFeature1Desc: "Ürünün pazar fiyatlarını karşılaştırın.",
+    proFeature2Title: "Otomatik RFQ",
+    proFeature2Desc: "Tedarikçiler için İngilizce e-posta taslakları hazırlayın."
   },
-  proSection: { 
-    badge: "E-TİCARETÇİLER İÇİN", 
-    title: "Çin'den Al, Türkiye'de Sat", 
-    subtitle: "Karlılık Hesaplama Aracı", 
-    description: "Sadece vergileri değil; ürünün Çin'deki alış fiyatını ve Türkiye'deki satış fiyatını kıyaslayarak size net kar marjını gösteriyoruz." 
-  },
-  corporate: { 
-    badge: "EKİPLER İÇİN", 
-    title: "Büyüyen İşletmeler", 
-    subtitle: "Çoklu Yönetim", 
-    description: "Tüm ithalat operasyonunuzu tek ekrandan yönetin. Geçmiş sorgularınızı arşivleyin ve ekibinizle paylaşın." 
-  },
-  faq: { 
-    title: "Merak Edilenler", 
-    subtitle: "Kafanızdaki soru işaretlerini giderelim", 
-    items: [
-      { question: "Sistem nasıl çalışıyor?", answer: "Çok basit! Ürünün fotoğrafını yüklüyorsunuz, yapay zeka (Gemini 3.0) görseli tarıyor ve güncel gümrük mevzuatına göre raporluyor." },
-      { question: "Telefondan kullanabilir miyim?", answer: "Evet, uygulamamız tam mobil uyumludur. Çin'de fuardayken bile fotoğraf çekip anında maliyet hesabı yapabilirsiniz." },
-      { question: "Ücretsiz deneme var mı?", answer: "Kesinlikle! Yeni üyelere sistemimizi test etmeleri için ücretsiz haklar tanımlıyoruz." },
-      { question: "Fatura alabilir miyim?", answer: "Tabii ki, ödemenizden hemen sonra kurumsal e-Faturanız mail adresinize gönderilir." },
-      { question: "GTIP kodları ne kadar güvenilir?", answer: "Modelimiz %99.9 doğruluk oranıyla çalışır ancak resmi beyanlarda gümrük müşavirinizle son teyidi yapmanızı öneririz." },
-      { question: "İstediğim zaman iptal edebilir miyim?", answer: "Evet, taahhüt yok. Memnun kalmazsanız panelden tek tıkla iptal edebilirsiniz." }
-    ]
-  },
-  guide: { 
-    sectionTitle: "Nasıl Kullanılır?", 
-    starterTitle: "Hoşgeldin! {credits} Kredin Var.", 
-    starterDesc: "Hemen bir ürün fotoğrafı yükle ve siheri gör. İşte ipuçları:", 
-    strategy1Title: "Hızlı Tarama", 
-    strategy1Desc: "Ürünün fotoğrafını net çekmeye özen göster.", 
-    strategy2Title: "Belge Kontrolü", 
-    strategy2Desc: "Gümrükte takılmamak için 'Gerekli Evraklar' listesine mutlaka göz at.", 
-    proTitle: "Pro Özellikler", 
-    proFeature1Title: "Fiyat Analizi", 
-    proFeature1Desc: "Ürünün piyasa değerini öğren.", 
-    proFeature2Title: "Tedarikçi İletişimi", 
-    proFeature2Desc: "Hazır İngilizce mail taslaklarını kullan." 
-  },
-  testimonials: [
-    { id: '1', name: "Selin Y.", role: "Amazon Satıcısı", comment: "İnanılmaz pratik. Fuar gezerken ürünün maliyetini hesaplamak için kullanıyorum. Hayat kurtarıcı!", rating: 5, avatarInitial: "S" },
-    { id: '2', name: "Burak K.", role: "İthalatçı", comment: "Eskiden müşavire sorup 1 gün beklediğim bilgiyi artık 10 saniyede öğreniyorum. Fiyatı bedava sayılır.", rating: 5, avatarInitial: "B" },
-    { id: '3', name: "Merve T.", role: "Girişimci", comment: "Arayüzü çok temiz, kullanımı çok kolay. Hiçbir teknik bilgiye gerek kalmadan gümrük işlerimi hallediyorum.", rating: 5, avatarInitial: "M" },
-    { id: '4', name: "Kaan D.", role: "Lojistik Uzmanı", comment: "Müşterilerime anlık fiyat vermek için kullanıyorum. GTIP tespitleri şaşırtıcı derecede doğru.", rating: 5, avatarInitial: "K" }
-  ],
   updates: [],
+  testimonials: [],
   tracking: { metaPixelId: "", tiktokPixelId: "" },
-  emailSettings: { senderName: "GümrükAI", subject: "Siparişiniz Onaylandı", body: "Sayın {ad_soyad}, {paket_adi} aboneliğiniz başarıyla başlatılmıştır." },
-  paymentSettings: { provider: 'iyzico', apiKey: '', secretKey: '', baseUrl: '' },
-  footer: { 
-    brandName: "GümrükAI", 
-    brandDesc: "İthalatçılar için geliştirilmiş en pratik yapay zeka asistanı.", 
-    copyright: "© 2024 GümrükAI", 
-    badgeText: "İstanbul'da Geliştirildi ❤️", 
-    socialLinks: { twitter: "#", linkedin: "#", instagram: "#" }, 
-    legalContent: { privacy: "Gizlilik politikası...", terms: "Kullanım koşulları...", contact: "info@gumrukai.com" } 
+  emailSettings: {
+    senderName: "GümrükAI Ekibi",
+    subject: "Aboneliğiniz Aktif Edildi",
+    body: "Sayın {ad_soyad}, {paket_adi} paketiniz başarıyla tanımlanmıştır."
+  },
+  paymentSettings: { 
+    provider: 'iyzico', 
+    apiKey: process.env.VITE_IYZICO_API_KEY || "", 
+    secretKey: process.env.VITE_IYZICO_SECRET_KEY || "", 
+    baseUrl: process.env.VITE_IYZICO_BASE_URL || "" 
+  },
+  footer: {
+    brandName: "GümrükAI",
+    brandDesc: "Yapay zeka destekli gümrük müşavirliği asistanı.",
+    copyright: "© 2025 GümrükAI",
+    badgeText: "Secure Payment",
+    socialLinks: { twitter: "", linkedin: "", instagram: "" },
+    legalContent: {
+      privacy: "",
+      terms: "",
+      contact: ""
+    }
   }
 };
 
 export const storageService = {
   
-  // --- AUTHENTICATION ---
-  
-  registerUser: async (name: string, email: string, password: string): Promise<User> => {
-    // Demo/Test hesapları için LocalStorage kullanımı
-    if (email.endsWith('@test.com') || email === 'demo@gumrukai.com') {
-      const mockUser: User = { email, name: name || 'Test Kullanıcısı', title: 'Misafir Üye', role: 'user', planId: 'free', credits: 5, subscriptionStatus: 'active', isEmailVerified: true, isPhoneVerified: true };
-      localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockUser));
-      return mockUser;
+  getCurrentUserProfile: async (): Promise<User> => {
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+          if (profile) {
+            return { 
+                email: profile.email, 
+                name: profile.full_name, 
+                role: profile.role || 'user', 
+                credits: profile.credits || 0,
+                planId: profile.plan_id || 'free',
+                title: profile.title || 'İthalatçı',
+                isEmailVerified: profile.is_email_verified || false,
+                isPhoneVerified: profile.is_phone_verified || false,
+                phoneNumber: profile.phone_number,
+                subscriptionStatus: profile.subscription_status || 'active'
+            };
+          }
+        }
+      } catch (e) {
+        console.error("Supabase Profile Fetch Error:", e);
+      }
     }
-    
-    // Gerçek Supabase Kaydı
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
-    if (error) throw new Error(error.message);
-    if (!data.user) throw new Error("Kullanıcı oluşturulamadı.");
-    
-    // Admin email kontrolü (Hardcoded güvenlik önlemi - opsiyonel)
-    if (email === 'admin@admin.com') return { email: data.user.email!, name: name || 'Süper Admin', title: 'Sistem Yöneticisi', role: 'admin', planId: '3', credits: -1, subscriptionStatus: 'active', isEmailVerified: true, isPhoneVerified: true };
-    
-    return { email: data.user.email!, name: name, title: 'Misafir Üye', role: 'user', planId: 'free', credits: 0, subscriptionStatus: 'active', isEmailVerified: false, isPhoneVerified: false };
+    const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+    if (mockSessionStr) return JSON.parse(mockSessionStr);
+    throw new Error("Oturum bulunamadı.");
   },
 
-  loginUser: async (email: string, password: string, rememberMe: boolean = false): Promise<User> => {
-    // 1. Hardcoded Demo Hesaplar (Geliştirme Amaçlı)
-    if (email === 'admin@admin.com' && password === 'admin') {
-        const mockAdmin: User = { email: 'admin@admin.com', name: 'Süper Admin', title: 'Sistem Yöneticisi', role: 'admin', planId: '3', credits: -1, subscriptionStatus: 'active', isEmailVerified: true, isPhoneVerified: true };
-        localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockAdmin));
-        await new Promise(r => setTimeout(r, 600)); return mockAdmin;
+  registerUser: async (name: string, email: string, password: string): Promise<User> => {
+    if (isSupabaseConfigured()) {
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
+      if (error) throw new Error(error.message);
+      if (data.user) {
+        return { email: data.user.email!, name, role: 'user', credits: 5, planId: 'free', title: 'Yeni Üye', isEmailVerified: false, isPhoneVerified: false, subscriptionStatus: 'active' };
+      }
     }
-    if (email === 'demo@gumrukai.com' && password === 'demo') {
-        const mockUser: User = { email: 'demo@gumrukai.com', name: 'Demo Kullanıcı', title: 'Profesyonel İthalatçı', role: 'user', planId: '2', credits: 100, subscriptionStatus: 'active', isEmailVerified: true, isPhoneVerified: true };
-        localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockUser));
-        await new Promise(r => setTimeout(r, 600)); return mockUser;
-    }
+    const mockUser: User = { email, name, role: 'user', credits: 5, planId: 'free', title: 'Yeni Üye', isEmailVerified: false, isPhoneVerified: false, subscriptionStatus: 'active' };
+    localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockUser));
+    return mockUser;
+  },
 
-    // 2. Gerçek Supabase Girişi
-    try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) { console.error("Supabase Login Error:", error); throw new Error(error.message); }
-        if (!data.user) throw new Error("Giriş yapılamadı. Kullanıcı bulunamadı.");
-        
-        // Gerçek giriş başarılıysa, önceki mock session'ı temizle (Çakışmayı önle)
-        localStorage.removeItem(MOCK_SESSION_KEY);
-        
-        return await storageService.getCurrentUserProfile();
-    } catch (e: any) { throw e; }
+  loginUser: async (email: string, password: string): Promise<User> => {
+    if (isSupabaseConfigured()) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw new Error(error.message);
+      return await storageService.getCurrentUserProfile();
+    }
+    const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+    if (mockSessionStr) {
+      const user = JSON.parse(mockSessionStr) as User;
+      if (user.email === email) return user;
+    }
+    throw new Error("Geçersiz e-posta veya şifre.");
   },
 
   logoutUser: async () => { 
       localStorage.removeItem(MOCK_SESSION_KEY); 
-      await supabase.auth.signOut(); 
+      if (isSupabaseConfigured()) await supabase.auth.signOut(); 
   },
-
-  getCurrentUserProfile: async (): Promise<User> => {
-    // ÖNCELİK DEĞİŞİKLİĞİ: Önce Supabase'i kontrol et, sonra Mock'a bak.
-    // Bu sayede gerçek kullanıcı verisi her zaman local test verisine baskın gelir.
-
-    // 1. Supabase Session Kontrolü
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-        // Gerçek kullanıcı bulunduysa, mock veriyi temizle
-        localStorage.removeItem(MOCK_SESSION_KEY);
-
-        if (user.email === 'admin@admin.com') return { email: user.email!, name: user.user_metadata.full_name || 'Süper Admin', title: 'Sistem Yöneticisi', role: 'admin', planId: '3', credits: -1, subscriptionStatus: 'active', isEmailVerified: true, isPhoneVerified: true };
-        
-        // Veritabanından en güncel profil verisini çek (role: 'admin' burada geliyor)
-        const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        
-        // Profil yoksa fallback oluştur (Hata durumunda)
-        if (error || !profile) return { email: user.email!, name: user.user_metadata.full_name || 'Kullanıcı', title: 'Misafir Üye', role: 'user', planId: 'free', credits: 0, subscriptionStatus: 'active', isEmailVerified: !!user.email_confirmed_at, isPhoneVerified: !!user.phone_confirmed_at };
-        
-        let discount = undefined;
-        if (profile.discount_active) discount = { isActive: profile.discount_active, rate: profile.discount_rate || 0, endDate: profile.discount_end_date || '' };
-        
-        return { 
-            email: profile.email, 
-            name: profile.full_name, 
-            title: profile.title, 
-            role: profile.role || 'user', // Veritabanındaki rolü kullan
-            planId: profile.plan_id || 'free', // Veritabanındaki planı kullan
-            credits: profile.credits, 
-            subscriptionStatus: profile.subscription_status, 
-            isEmailVerified: profile.is_email_verified, 
-            isPhoneVerified: profile.is_phone_verified, 
-            phoneNumber: profile.phone_number, 
-            discount: discount 
-        };
-    }
-
-    // 2. Mock Session Kontrolü (Sadece Supabase oturumu yoksa)
-    const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-    if (mockSessionStr) return JSON.parse(mockSessionStr);
-
-    throw new Error("Oturum açılmamış.");
-  },
-
-  // --- ANALYSIS & HISTORY ---
 
   saveToHistory: async (userEmail: string, analysis: CustomsAnalysis): Promise<HistoryItem> => {
-    // Mock modunda mıyız?
-    const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-    // Sadece Supabase oturumu YOKSA mock'a kaydet
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (mockSessionStr && !user) {
-       const newItem: HistoryItem = { ...analysis, id: `mock-${Date.now()}`, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now() };
-       const mockHistoryKey = `${MOCK_HISTORY_PREFIX}${userEmail}`;
-       const currentHistory = JSON.parse(localStorage.getItem(mockHistoryKey) || '[]');
-       const updatedHistory = [newItem, ...currentHistory];
-       localStorage.setItem(mockHistoryKey, JSON.stringify(updatedHistory));
-       return newItem;
-    }
-
-    if (!user) throw new Error("Kullanıcı oturumu yok.");
-    
-    // Kredi düşme işlemi (Admin değilse)
-    if (userEmail !== 'admin@admin.com') {
-        const currentProfile = await storageService.getCurrentUserProfile();
-        if (currentProfile.role !== 'admin' && currentProfile.credits > 0) {
-            await supabase.from('profiles').update({ credits: currentProfile.credits - 1 }).eq('id', user.id);
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const newItem = { 
+            user_id: user.id, 
+            product_name: analysis.productName, 
+            description: analysis.description, 
+            hs_code: analysis.hsCode, 
+            hs_code_description: analysis.hsCodeDescription, 
+            taxes: analysis.taxes, 
+            documents: analysis.documents, 
+            import_price: analysis.importPrice, 
+            retail_price: analysis.retailPrice, 
+            email_draft: analysis.emailDraft, 
+            confidence_score: analysis.confidenceScore 
+          };
+          const { data, error } = await supabase.from('analysis_history').insert(newItem).select().single();
+          if (!error && data) {
+            return { 
+              ...analysis, 
+              id: data.id, 
+              timestamp: new Date(data.created_at).getTime(), 
+              date: new Date(data.created_at).toLocaleDateString('tr-TR') 
+            };
+          }
         }
+      } catch (e) { console.warn("Database save failed, using fallback."); }
     }
-
-    const newItem = { user_id: user.id, product_name: analysis.productName, description: analysis.description, hs_code: analysis.hsCode, hs_code_description: analysis.hsCodeDescription, taxes: analysis.taxes, documents: analysis.documents, import_price: analysis.importPrice, retail_price: analysis.retailPrice, email_draft: analysis.emailDraft, confidence_score: analysis.confidenceScore };
-    const { data, error } = await supabase.from('analysis_history').insert(newItem).select().single();
-    if (error) { console.error("Save error:", error); throw new Error("Geçmişe kaydedilemedi. (Veritabanı tablosu 'analysis_history' mevcut mu?)"); }
-    return { ...analysis, id: data.id, timestamp: new Date(data.created_at).getTime(), date: new Date(data.created_at).toLocaleDateString('tr-TR') };
+    const mockItem: HistoryItem = { ...analysis, id: `h-${Date.now()}`, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now() };
+    const key = `${MOCK_HISTORY_PREFIX}${userEmail}`;
+    const history = JSON.parse(localStorage.getItem(key) || '[]');
+    localStorage.setItem(key, JSON.stringify([mockItem, ...history]));
+    return mockItem;
   },
 
   getUserHistory: async (userEmail: string): Promise<HistoryItem[]> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // Mock Data Fallback (Sadece kullanıcı yoksa)
-    if (!user) {
-        const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-        if (mockSessionStr) { const mockHistoryKey = `${MOCK_HISTORY_PREFIX}${userEmail}`; return JSON.parse(localStorage.getItem(mockHistoryKey) || '[]'); }
-        return [];
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data } = await supabase.from('analysis_history').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+          if (data) return data.map((item: any) => ({
+              productName: item.product_name,
+              description: item.description,
+              hsCode: item.hs_code,
+              hsCodeDescription: item.hs_code_description || '',
+              taxes: item.taxes || [],
+              documents: item.documents || [],
+              importPrice: item.import_price,
+              retailPrice: item.retail_price,
+              emailDraft: item.email_draft || "",
+              confidenceScore: item.confidence_score || 90,
+              id: item.id,
+              date: new Date(item.created_at).toLocaleDateString('tr-TR'),
+              timestamp: new Date(item.created_at).getTime()
+            }));
+        }
+      } catch (e) {}
     }
-
-    const { data, error } = await supabase.from('analysis_history').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
-    if (error) return [];
-    return data.map((item: any) => ({ productName: item.product_name, description: item.description, hsCode: item.hs_code, hsCodeDescription: item.hs_code_description || '', taxes: item.taxes || [], documents: item.documents || [], importPrice: item.import_price, retailPrice: item.retail_price, emailDraft: item.email_draft || "", confidenceScore: item.confidence_score || 90, id: item.id, date: new Date(item.created_at).toLocaleDateString('tr-TR'), timestamp: new Date(item.created_at).getTime() }));
+    const key = `${MOCK_HISTORY_PREFIX}${userEmail}`;
+    return JSON.parse(localStorage.getItem(key) || '[]');
   },
 
   deleteHistoryItem: async (userEmail: string, id: string) => {
-    if (id.startsWith('mock-')) {
-        const mockHistoryKey = `${MOCK_HISTORY_PREFIX}${userEmail}`;
-        const currentHistory = JSON.parse(localStorage.getItem(mockHistoryKey) || '[]');
-        const updatedHistory = currentHistory.filter((i: any) => i.id !== id);
-        localStorage.setItem(mockHistoryKey, JSON.stringify(updatedHistory));
-        return;
+    if (id.startsWith('h-')) {
+      const key = `${MOCK_HISTORY_PREFIX}${userEmail}`;
+      const history = JSON.parse(localStorage.getItem(key) || '[]');
+      localStorage.setItem(key, JSON.stringify(history.filter((i: any) => i.id !== id)));
+    } else if (isSupabaseConfigured()) {
+      await supabase.from('analysis_history').delete().eq('id', id);
     }
-    await supabase.from('analysis_history').delete().eq('id', id);
   },
 
-  // --- CONTENT & CONFIG ---
+  getSiteContent: (): SiteContent => {
+    const saved = localStorage.getItem(SITE_CONTENT_KEY);
+    return saved ? JSON.parse(saved) : DEFAULT_CONTENT;
+  },
 
-  getSiteContent: (): SiteContent => { return FALLBACK_CONTENT; },
-  
   fetchSiteContent: async (): Promise<SiteContent> => {
-    try {
-      const { data, error } = await supabase.from('site_config').select('content').single();
-      if (error || !data || !data.content) return FALLBACK_CONTENT;
-      return { ...FALLBACK_CONTENT, ...data.content };
-    } catch (e) { return FALLBACK_CONTENT; }
+    if (isSupabaseConfigured()) {
+      try {
+        const { data } = await supabase.from('site_config').select('content').single();
+        if (data && data.content) return { ...DEFAULT_CONTENT, ...data.content };
+      } catch (e) {}
+    }
+    return storageService.getSiteContent();
   },
 
   saveSiteContent: async (content: SiteContent) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return; // Sadece giriş yapmış kullanıcılar kaydedebilir (RLS policy kontrol edecek)
-    
-    const { error } = await supabase.from('site_config').upsert({ id: 1, content });
-    if (error) console.error("Content save error:", error);
+    localStorage.setItem(SITE_CONTENT_KEY, JSON.stringify(content));
+    if (isSupabaseConfigured()) {
+      await supabase.from('site_config').upsert({ id: 1, content });
+    }
   },
 
-  // --- USER MANAGEMENT & BILLING ---
-
-  updateUserSubscription: async (plan: SubscriptionPlan, targetUserEmail?: string): Promise<User> => {
-      let newCredits = 0; let newTitle = 'Üye'; let newRole: 'user' | 'admin' = 'user';
-      if (plan.id === '1') { newTitle = 'Girişimci Üye'; newCredits = 50; newRole = 'user'; } 
-      else if (plan.id === '2') { newTitle = 'Profesyonel İthalatçı'; newCredits = -1; newRole = 'user'; } 
-      else if (plan.id === '3') { newTitle = 'Kurumsal Yönetici'; newCredits = -1; newRole = 'admin'; } 
-      else if (plan.id === 'free') { newTitle = 'Misafir Üye'; newCredits = 0; newRole = 'user'; }
-      
-      // Mock Update
-      const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (mockSessionStr && !user) {
-          const u = JSON.parse(mockSessionStr);
-          const updatedUser = { ...u, planId: plan.id, title: newTitle, credits: newCredits, role: newRole, subscriptionStatus: 'active' };
-          if (!targetUserEmail || targetUserEmail === u.email) localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
-          return updatedUser;
-      }
-
-      let userIdToUpdate = ''; let currentUser = null;
-      if (targetUserEmail) { const { data: targetProfile } = await supabase.from('profiles').select('id').eq('email', targetUserEmail).single(); if (targetProfile) userIdToUpdate = targetProfile.id; } 
-      else { if (user) userIdToUpdate = user.id; currentUser = user; }
-      
-      if (!userIdToUpdate) throw new Error("Kullanıcı bulunamadı");
-      
-      const { error: profileError } = await supabase.from('profiles').update({ plan_id: plan.id, credits: newCredits, title: newTitle, role: newRole, subscription_status: 'active' }).eq('id', userIdToUpdate);
-      if (profileError) throw new Error("Profil güncellenemedi.");
-      
-      if (!targetUserEmail && currentUser) {
-          const billingRecord = { user_id: currentUser.id, date: new Date().toLocaleDateString('tr-TR'), plan_name: plan.name, amount: plan.price, status: 'paid', invoice_url: '#' };
-          await supabase.from('billing_history').insert(billingRecord);
-      }
-      
-      if (!targetUserEmail) { return await storageService.getCurrentUserProfile(); } else { return { email: targetUserEmail } as any; }
-  },
-
-  cancelUserSubscription: async (): Promise<User> => {
-      const { data: { user } } = await supabase.auth.getUser(); 
-      
-      // Mock Cancel
-      if (!user) {
-        const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-        if (mockSessionStr) { const u = JSON.parse(mockSessionStr); const updatedUser = { ...u, planId: 'free', credits: 0, title: 'Misafir Üye', subscriptionStatus: 'cancelled', discount: undefined, role: 'user' }; localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser)); return updatedUser; }
-        throw new Error("Kullanıcı bulunamadı");
-      }
-
-      if (user.email === 'admin@admin.com') return await storageService.getCurrentUserProfile();
-      const { error } = await supabase.from('profiles').update({ plan_id: 'free', credits: 0, title: 'Misafir Üye', role: 'user', subscription_status: 'cancelled', discount_active: false, discount_rate: 0, discount_end_date: null }).eq('id', user.id);
-      if (error) throw new Error("Abonelik iptal edilirken hata oluştu.");
-      return await storageService.getCurrentUserProfile();
-  },
-
-  applyRetentionOffer: async (): Promise<User> => {
-      const { data: { user } } = await supabase.auth.getUser(); 
-      
-      // Mock Offer
-      if (!user) {
-        const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-        if (mockSessionStr) { const u = JSON.parse(mockSessionStr); const endDate = new Date(); endDate.setMonth(endDate.getMonth() + 3); const updatedUser = { ...u, discount: { isActive: true, rate: 0.5, endDate: endDate.toISOString() } }; localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser)); return updatedUser; }
-        throw new Error("Kullanıcı bulunamadı");
-      }
-
-      const endDate = new Date(); endDate.setMonth(endDate.getMonth() + 3);
-      const { error } = await supabase.from('profiles').update({ discount_active: true, discount_rate: 0.5, discount_end_date: endDate.toISOString() }).eq('id', user.id);
-      if (error) throw new Error("İndirim tanımlanamadı.");
-      return await storageService.getCurrentUserProfile();
-  },
-
-  getUserBilling: async (userEmail: string): Promise<BillingHistory[]> => {
-      const { data: { user } } = await supabase.auth.getUser(); 
-      if (!user) return [];
-      const { data, error } = await supabase.from('billing_history').select('*').order('created_at', { ascending: false });
-      if (error) return [];
-      return data.map((item: any) => ({ id: item.id, date: item.date, planName: item.plan_name, amount: item.amount, status: item.status, invoiceUrl: item.invoice_url }));
-  },
-  
   getAllUsers: async (): Promise<User[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      // Admin değilse veya login olmamışsa boş dön
-      if (!user) return [];
-
-      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      if (error) return [];
-      return data.map((p: any) => ({ email: p.email, name: p.full_name, title: p.title, role: p.role || 'user', planId: p.plan_id || 'free', credits: p.credits, subscriptionStatus: p.subscription_status, isEmailVerified: p.is_email_verified, isPhoneVerified: p.is_phone_verified, phoneNumber: p.phone_number })); 
-  },
-
-  deleteUser: async (email: string) => {
-      // Mock silme (Etkisiz)
-      if (!email.includes('@')) return;
-      await supabase.from('profiles').delete().eq('email', email);
+    if (isSupabaseConfigured()) {
+      const { data } = await supabase.from('profiles').select('*');
+      if (data) return data.map((p: any) => ({ 
+        email: p.email, name: p.full_name, role: p.role || 'user', credits: p.credits, 
+        planId: p.plan_id, title: p.title, isEmailVerified: p.is_email_verified, 
+        isPhoneVerified: p.is_phone_verified, subscriptionStatus: p.subscription_status 
+      }));
+    }
+    return [];
   },
 
   getDashboardStats: async (): Promise<DashboardStats> => {
-      // 1. Mock Data Handling (Sadece Supabase user yoksa)
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user && localStorage.getItem(MOCK_SESSION_KEY)) {
-        return {
-            totalRevenue: 124500,
-            revenueChange: 12,
-            totalSales: 85,
-            salesChange: 5,
-            newUsers: 142,
-            usersChange: 8,
-            totalAnalyses: 1250,
-            analysesChange: 24,
-            planDistribution: [ { name: 'Girişimci', count: 45, color: '#0ea5e9' }, { name: 'Profesyonel', count: 30, color: '#f59e0b' }, { name: 'Kurumsal', count: 10, color: '#6366f1' } ],
-            salesChart: [ { day: 'Pzt', value: 12 }, { day: 'Sal', value: 19 }, { day: 'Çar', value: 15 }, { day: 'Per', value: 22 }, { day: 'Cum', value: 30 }, { day: 'Cmt', value: 45 }, { day: 'Paz', value: 50 } ],
-            recommendations: [ { title: 'Fiyatlandırma Stratejisi', description: 'Girişimci paketine talebi artırmak için kampanya yapın.', impact: 'high' } ]
-        };
-      }
-
-      // 2. Real Supabase Data
-      try {
-          // A. Calculate Revenue from Billing History
-          const { data: billingData } = await supabase.from('billing_history').select('amount, created_at');
-          let totalRevenue = 0;
-          let totalSales = 0;
-          const salesByDay: Record<string, number> = {};
-          
-          if (billingData) {
-              totalSales = billingData.length;
-              billingData.forEach((row: any) => {
-                  // Clean string like "399 ₺" to number 399
-                  const amount = parseFloat(row.amount.replace(/[^0-9,.]/g, '').replace(',', '.'));
-                  if (!isNaN(amount)) totalRevenue += amount;
-
-                  // Sales Chart Data Prep
-                  const day = new Date(row.created_at).toLocaleDateString('tr-TR', { weekday: 'short' });
-                  salesByDay[day] = (salesByDay[day] || 0) + 1;
-              });
-          }
-
-          // B. Counts
-          const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-          const { count: analysisCount } = await supabase.from('analysis_history').select('*', { count: 'exact', head: true });
-          
-          // C. Plan Distribution
-          const { data: profiles } = await supabase.from('profiles').select('plan_id');
-          let plan1 = 0, plan2 = 0, plan3 = 0, planFree = 0;
-          profiles?.forEach((p: any) => {
-              if (p.plan_id === '1') plan1++;
-              else if (p.plan_id === '2') plan2++;
-              else if (p.plan_id === '3') plan3++;
-              else planFree++;
-          });
-
-          // D. Format Chart Data (Last 7 days logic simulated by mapping days)
-          const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
-          const salesChart = days.map(d => ({ day: d, value: salesByDay[d] || Math.floor(Math.random() * 5) })); // Fallback random just to show graph if empty
-
-          return {
-              totalRevenue: totalRevenue,
-              revenueChange: 0, // Needs complex query for comparison
-              totalSales: totalSales,
-              salesChange: 0,
-              newUsers: userCount || 0,
-              usersChange: 0,
-              totalAnalyses: analysisCount || 0,
-              analysesChange: 0,
-              planDistribution: [
-                  { name: 'Başlangıç', count: planFree, color: '#94a3b8' },
-                  { name: 'Girişimci', count: plan1, color: '#0ea5e9' },
-                  { name: 'Profesyonel', count: plan2, color: '#f59e0b' },
-                  { name: 'Kurumsal', count: plan3, color: '#6366f1' }
-              ],
-              salesChart: salesChart,
-              recommendations: [
-                  { title: 'Dönüşüm Oranı', description: 'Ücretsiz kullanıcıları ücretli plana çekmek için %50 indirim teklifini öne çıkarın.', impact: 'high' }
-              ]
-          };
-      } catch (error) {
-          console.error("Stats error", error);
-          return {
-            totalRevenue: 0, revenueChange: 0, totalSales: 0, salesChange: 0, newUsers: 0, usersChange: 0, totalAnalyses: 0, analysesChange: 0,
-            planDistribution: [], salesChart: [], recommendations: []
-          };
-      }
+    // Dashboard stats should be computed on backend in production
+    return {
+      totalRevenue: 0, revenueChange: 0, totalSales: 0, salesChange: 0, 
+      newUsers: 0, usersChange: 0, totalAnalyses: 0, analysesChange: 0,
+      planDistribution: [], salesChart: [], recommendations: []
+    };
   },
 
-  verifyUser: (email: string, pass: string) => null,
-  generateVerificationCode: (type?: string, identifier?: string) => Math.floor(100000 + Math.random() * 900000).toString(),
-  
-  verifyUserContact: async (email: string, type: 'email' | 'phone', code: string, phoneNumber?: string): Promise<{ success: boolean, message: string, user?: User }> => {
-      // Mock Session Kontrol
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-          const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
-          if (mockSessionStr) {
-              if (code.length === 6) {
-                const u = JSON.parse(mockSessionStr);
-                const updates: any = type === 'email' ? { isEmailVerified: true } : { isPhoneVerified: true };
-                  if (phoneNumber && type === 'phone') updates.phoneNumber = phoneNumber;
-                const updatedUser = { ...u, ...updates, credits: u.credits + 1 };
-                localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updatedUser));
-                return { success: true, message: "Doğrulandı! +1 Analiz Kredisi hesabınıza eklendi. (Test Modu)", user: updatedUser };
-              }
-              return { success: false, message: "Kod hatalı." };
-          }
+  updateUserSubscription: async (plan: any, userEmail: string): Promise<User> => {
+    if (isSupabaseConfigured()) {
+       const { data: profile } = await supabase.from('profiles').select('id').eq('email', userEmail).single();
+       if (profile) await supabase.from('profiles').update({ plan_id: plan.id, credits: -1, subscription_status: 'active' }).eq('id', profile.id);
+    } else {
+      const mockSessionStr = localStorage.getItem(MOCK_SESSION_KEY);
+      if (mockSessionStr) {
+        const u = JSON.parse(mockSessionStr) as User;
+        if (u.email === userEmail) {
+          u.planId = plan.id;
+          u.credits = -1;
+          u.subscriptionStatus = 'active';
+          localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(u));
+        }
       }
-
-      if (code.length === 6 && user) {
-          const updates: any = type === 'email' ? { is_email_verified: true } : { is_phone_verified: true };
-          if (phoneNumber && type === 'phone') updates.phone_number = phoneNumber;
-          const current = await storageService.getCurrentUserProfile();
-          await supabase.from('profiles').update({ ...updates, credits: current.credits + 1 }).eq('id', user.id);
-          return { success: true, message: "Doğrulandı! +1 Analiz Kredisi hesabınıza eklendi.", user: await storageService.getCurrentUserProfile() };
-      }
-      return { success: false, message: "Kod hatalı veya süresi dolmuş." };
+    }
+    return await storageService.getCurrentUserProfile();
   },
 
-  saveBilling: async (userEmail: string, item: any) => { return { ...item, id: '123' }; }
+  deleteUser: async (email: string) => {
+    if (isSupabaseConfigured()) await supabase.from('profiles').delete().eq('email', email);
+  },
+
+  getUserBilling: async (userEmail: string): Promise<BillingHistory[]> => {
+    return [];
+  },
+
+  cancelUserSubscription: async (): Promise<User> => {
+    const user = await storageService.getCurrentUserProfile();
+    const updated = { ...user, subscriptionStatus: 'cancelled' as const, planId: 'free' };
+    localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updated));
+    if (isSupabaseConfigured()) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) await supabase.from('profiles').update({ subscription_status: 'cancelled', plan_id: 'free' }).eq('id', authUser.id);
+    }
+    return updated;
+  },
+
+  applyRetentionOffer: async (): Promise<User> => {
+    const user = await storageService.getCurrentUserProfile();
+    const endDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+    const updated: User = { ...user, discount: { isActive: true, rate: 0.5, endDate } };
+    localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updated));
+    return updated;
+  },
+
+  generateVerificationCode: (type: string, identifier: string) => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  },
+
+  verifyUserContact: async (email: string, type: string, code: string, extra?: string): Promise<{ success: boolean; message: string; user?: User }> => {
+    const user = await storageService.getCurrentUserProfile();
+    const updated = { ...user };
+    if (type === 'email') updated.isEmailVerified = true;
+    if (type === 'phone') { updated.isPhoneVerified = true; updated.phoneNumber = extra; }
+    updated.credits += 1;
+    localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updated));
+    if (isSupabaseConfigured()) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) await supabase.from('profiles').update({ 
+            is_email_verified: updated.isEmailVerified, 
+            is_phone_verified: updated.isPhoneVerified,
+            phone_number: updated.phoneNumber,
+            credits: updated.credits
+        }).eq('id', authUser.id);
+    }
+    return { success: true, message: "Doğrulama başarılı! +1 Kredi eklendi.", user: updated };
+  }
 };

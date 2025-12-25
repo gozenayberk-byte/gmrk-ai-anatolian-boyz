@@ -331,13 +331,18 @@ const App: React.FC = () => {
       setIsLoginModalOpen(false);
   };
 
+  /**
+   * Handles successful payment by updating the user's subscription and refreshing profile data.
+   * Fixed reported Error: Expected 2 arguments, but got 1. (Line ~340 in user's reported file)
+   */
   const handlePaymentSuccess = async () => {
       setIsPaymentModalOpen(false);
       
       if(user && selectedPlanForPayment) {
           try {
               // Backend'de aboneliği güncelle ve faturayı kaydet
-              const updatedUser = await storageService.updateUserSubscription(selectedPlanForPayment);
+              // Fix: Added user.email as second argument to match storageService.updateUserSubscription signature
+              const updatedUser = await storageService.updateUserSubscription(selectedPlanForPayment, user.email);
               setUser(updatedUser);
               setIsPurchaseSuccessModalOpen(true);
           } catch (e) {
