@@ -111,10 +111,11 @@ export const storageService = {
       const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
       if (error) throw new Error(error.message);
       if (data.user) {
-        return { email: data.user.email!, name, role: 'user', credits: 5, planId: 'free', title: 'Yeni Üye', isEmailVerified: false, isPhoneVerified: false, subscriptionStatus: 'active' };
+        // Yeni kullanıcılar 0 kredi ile başlar.
+        return { email: data.user.email!, name, role: 'user', credits: 0, planId: 'free', title: 'Yeni Üye', isEmailVerified: false, isPhoneVerified: false, subscriptionStatus: 'active' };
       }
     }
-    const mockUser: User = { email, name, role: 'user', credits: 5, planId: 'free', title: 'Yeni Üye', isEmailVerified: false, isPhoneVerified: false, subscriptionStatus: 'active' };
+    const mockUser: User = { email, name, role: 'user', credits: 0, planId: 'free', title: 'Yeni Üye', isEmailVerified: false, isPhoneVerified: false, subscriptionStatus: 'active' };
     localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(mockUser));
     return mockUser;
   },
@@ -248,7 +249,6 @@ export const storageService = {
   },
 
   getDashboardStats: async (): Promise<DashboardStats> => {
-    // Dashboard stats should be computed on backend in production
     return {
       totalRevenue: 0, revenueChange: 0, totalSales: 0, salesChange: 0, 
       newUsers: 0, usersChange: 0, totalAnalyses: 0, analysesChange: 0,
@@ -309,19 +309,32 @@ export const storageService = {
   verifyUserContact: async (email: string, type: string, code: string, extra?: string): Promise<{ success: boolean; message: string; user?: User }> => {
     const user = await storageService.getCurrentUserProfile();
     const updated = { ...user };
-    if (type === 'email') updated.isEmailVerified = true;
-    if (type === 'phone') { updated.isPhoneVerified = true; updated.phoneNumber = extra; }
-    updated.credits += 1;
+    
+    // Doğrulamaya göre krediyi artır
+    if (type === 'email' && !updated.isEmailVerified) {
+        updated.isEmailVerified = true;
+        updated.credits += 1;
+    }
+    if (type === 'phone' && !updated.isPhoneVerified) {
+        updated.isPhoneVerified = true;
+        updated.phoneNumber = extra;
+        updated.credits += 1;
+    }
+
     localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(updated));
+    
     if (isSupabaseConfigured()) {
         const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) await supabase.from('profiles').update({ 
-            is_email_verified: updated.isEmailVerified, 
-            is_phone_verified: updated.isPhoneVerified,
-            phone_number: updated.phoneNumber,
-            credits: updated.credits
-        }).eq('id', authUser.id);
+        if (authUser) {
+            await supabase.from('profiles').update({ 
+                is_email_verified: updated.isEmailVerified, 
+                is_phone_verified: updated.isPhoneVerified,
+                phone_number: updated.phoneNumber,
+                credits: updated.credits
+            }).eq('id', authUser.id);
+        }
     }
+    
     return { success: true, message: "Doğrulama başarılı! +1 Kredi eklendi.", user: updated };
   }
 };
