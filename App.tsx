@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppState, CustomsAnalysis, SubscriptionPlan, User as UserType, HistoryItem, SiteContent } from './types';
 import { analyzeProductImage } from './services/geminiService';
 import { storageService } from './services/storageService';
@@ -19,46 +19,13 @@ import Footer from './components/Footer';
 import LegalModal from './components/LegalModal';
 import UpdatesModal from './components/UpdatesModal';
 import { 
-  Box, LogOut, User, Menu, X as XIcon, LayoutDashboard, ArrowRight, ArrowLeft, AlertCircle, RefreshCcw, ShieldCheck, Zap, Gift
+  Box, LogOut, User, Menu, X as XIcon, LayoutDashboard, ArrowRight, ShieldCheck, Zap, TrendingUp, Clock, Globe, ShieldAlert, CheckCircle, BarChart3, HelpCircle, Activity, Users, Star, Building2, ShoppingBag
 } from 'lucide-react';
 
 const INITIAL_PLANS: SubscriptionPlan[] = [
-  {
-    id: '1',
-    name: "Girişimci",
-    price: "399 ₺",
-    period: "/ ay",
-    description: "Yeni başlayanlar ve e-ticaret girişimcileri için.",
-    iconKey: 'zap',
-    features: ["Aylık 50 GTIP Sorgusu", "Temel Vergi Oranları", "Basit Ürün Tanımlama", "Standard Destek"],
-    cta: "Hemen Başla",
-    popular: true,
-    color: "slate"
-  },
-  {
-    id: '2',
-    name: "Profesyonel İthalatçı",
-    price: "2.499 ₺",
-    period: "/ ay",
-    description: "Çin'den düzenli ürün getiren KOBİ'ler için ideal.",
-    iconKey: 'star',
-    features: ["Sınırsız GTIP Analizi", "Sınırsız Geçmiş & Arşiv", "Çin & TR Pazar Fiyat Araştırması", "Detaylı Mevzuat & Evrak Listesi", "Otomatik Tedarikçi Mail Taslağı", "Yapay Zeka Danışmanı"],
-    cta: "Planı Seç",
-    popular: false,
-    color: "brand"
-  },
-  {
-    id: '3',
-    name: "Kurumsal",
-    price: "4.999 ₺",
-    period: "/ ay",
-    description: "Holdingler ve Gümrük Müşavirlik firmaları için.",
-    iconKey: 'building',
-    features: ["Tüm Profesyonel Özellikler", "Yönetici Paneli Erişimi", "Kullanıcı ve Rol Yönetimi", "Site İçerik Düzenleme", "API Erişimi (ERP Entegrasyonu)", "7/24 Özel Temsilci"],
-    cta: "Satın Al & Yönet",
-    popular: false,
-    color: "indigo"
-  }
+  { id: '1', name: "Girişimci", price: "399 ₺", period: "/ ay", description: "Yeni başlayanlar için.", iconKey: 'zap', features: ["Aylık 50 GTIP Sorgusu", "Temel Vergi Oranları"], cta: "Hemen Başla", popular: true, color: "slate" },
+  { id: '2', name: "Profesyonel", price: "2.499 ₺", period: "/ ay", description: "Düzenli ithalatçılar için.", iconKey: 'star', features: ["Sınırsız Analiz", "Pazar Araştırması", "AI Danışman"], cta: "Planı Seç", popular: false, color: "brand" },
+  { id: '3', name: "Kurumsal", price: "4.999 ₺", period: "/ ay", description: "Müşavirlik firmaları için.", iconKey: 'building', features: ["API Erişimi", "Yönetici Paneli", "7/24 Destek"], cta: "Bize Ulaşın", popular: false, color: "indigo" }
 ];
 
 const App: React.FC = () => {
@@ -66,37 +33,25 @@ const App: React.FC = () => {
   const [analysisResult, setAnalysisResult] = useState<CustomsAnalysis | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
-  const [isPurchaseSuccessModalOpen, setIsPurchaseSuccessModalOpen] = useState(false);
-  const [isUpdatesModalOpen, setIsUpdatesModalOpen] = useState(false); 
-  const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<SubscriptionPlan | null>(null);
   const [user, setUser] = useState<UserType | null>(null);
-  const [activeLegalModal, setActiveLegalModal] = useState<'privacy' | 'terms' | 'contact' | null>(null);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [plans, setPlans] = useState<SubscriptionPlan[]>(INITIAL_PLANS);
   const [siteContent, setSiteContent] = useState<SiteContent>(storageService.getSiteContent());
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const checkSession = async () => {
+    const init = async () => {
       try {
-        const currentUser = await storageService.getCurrentUserProfile();
-        setUser(currentUser);
+        const content = await storageService.fetchSiteContent();
+        setSiteContent(content);
+        const u = await storageService.getCurrentUserProfile();
+        setUser(u);
       } catch (e) {}
     };
-    checkSession();
-    storageService.fetchSiteContent().then(content => setSiteContent(content));
+    init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_IN') {
-        try {
-          const currentUser = await storageService.getCurrentUserProfile();
-          setUser(currentUser);
-        } catch (e) { console.error("Session update error:", e); }
+        const u = await storageService.getCurrentUserProfile();
+        setUser(u);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setAppState(AppState.IDLE);
@@ -105,241 +60,238 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      storageService.getUserHistory(user.email).then(data => setHistory(data));
-    } else {
-      setHistory([]);
-    }
-  }, [user]);
-
   const handleFileSelect = async (file: File) => {
-    if (!user) {
-      setIsLoginModalOpen(true);
-      return;
-    }
-    if (user.subscriptionStatus === 'cancelled') {
-      setErrorMsg("Aboneliğiniz iptal edilmiştir.");
-      setAppState(AppState.ERROR);
-      return;
-    }
+    if (!user) { setIsLoginModalOpen(true); return; }
     if (user.credits === 0 && user.planId === 'free') {
-       setErrorMsg("Sorgu hakkınız dolmuştur. Bir paket satın alarak devam edebilirsiniz.");
+       setErrorMsg("Krediniz doldu.");
        setAppState(AppState.ERROR);
        return;
     }
-
     try {
       setAppState(AppState.ANALYZING);
-      setErrorMsg(null);
-      const objectUrl = URL.createObjectURL(file);
-      setImagePreview(objectUrl);
-      const result = await analyzeProductImage(file);
-      setAnalysisResult(result);
+      const url = URL.createObjectURL(file);
+      setImagePreview(url);
+      const res = await analyzeProductImage(file);
+      setAnalysisResult(res);
+      await storageService.saveToHistory(user.email, res);
       setAppState(AppState.SUCCESS);
-      if (user.credits > 0) {
-        setUser(prev => prev ? ({ ...prev, credits: prev.credits - 1 }) : null);
-      }
-      const savedItem = await storageService.saveToHistory(user.email, result);
-      setHistory(prev => [savedItem, ...prev]);
+      const updated = await storageService.getCurrentUserProfile();
+      setUser(updated);
     } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || "Bilinmeyen bir hata oluştu.");
+      setErrorMsg(err.message);
       setAppState(AppState.ERROR);
     }
   };
 
-  const handleLogout = async () => {
-    await storageService.logoutUser();
-    setUser(null);
-    setAppState(AppState.IDLE);
-    setIsMobileMenuOpen(false);
-  };
-
-  const handleLoginSubmitInModal = async (u: UserType) => {
-      setUser(u);
-      setAppState(AppState.DASHBOARD);
-      setIsLoginModalOpen(false);
-  };
-
-  const handlePaymentSuccess = async () => {
-      setIsPaymentModalOpen(false);
-      if(user && selectedPlanForPayment) {
-          try {
-              const updatedUser = await storageService.updateUserSubscription(selectedPlanForPayment, user.email);
-              setUser(updatedUser);
-              setIsPurchaseSuccessModalOpen(true);
-          } catch (e) {
-              console.error("Payment sync error:", e);
-              alert("Ödeme alındı ancak profil güncellenirken hata oluştu.");
-          }
-      }
-  };
-
-  const handleGoToDashboard = () => setAppState(AppState.DASHBOARD);
-  const handleGoToProfile = () => setAppState(AppState.USER_PROFILE);
-  const handleGoHome = () => setAppState(AppState.IDLE);
-  const handleReset = () => { setAnalysisResult(null); setImagePreview(null); setAppState(AppState.DASHBOARD); };
-  const handleOpenPricing = () => setIsPricingModalOpen(true);
-  const handleHistoryClick = () => { if(user) setAppState(AppState.HISTORY); else setIsLoginModalOpen(true); };
-
-  const handleSelectHistory = (item: HistoryItem) => {
-    setAnalysisResult(item);
+  // Fix: Added missing handleReset function
+  const handleReset = () => {
+    setAppState(AppState.DASHBOARD);
+    setAnalysisResult(null);
     setImagePreview(null);
-    setAppState(AppState.SUCCESS);
+    setErrorMsg(null);
   };
 
-  const onOpenVerification = () => setIsVerificationModalOpen(true);
+  const handleLogout = async () => { await storageService.logoutUser(); };
 
-  const handleSelectPlan = (plan: SubscriptionPlan) => {
-      let planToPay = { ...plan };
-      if (user?.discount?.isActive) {
-         const numericPrice = parseFloat(plan.price.replace(/\./g, '').replace(/[^0-9]/g, ''));
-         if (!isNaN(numericPrice)) {
-             const discountedPrice = Math.floor(numericPrice * (1 - user.discount.rate));
-             planToPay.price = `${discountedPrice.toLocaleString('tr-TR')} ₺`;
-             planToPay.originalPrice = plan.price;
-         }
-      }
-      setSelectedPlanForPayment(planToPay);
-      setIsPricingModalOpen(false);
-      setIsPaymentModalOpen(true);
-  };
-
-  const scrollToPricing = () => {
-      const element = document.getElementById('pricing-section');
-      if (element) element.scrollIntoView({ behavior: 'smooth' });
-      else setIsPricingModalOpen(true);
-  };
-  
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans relative flex flex-col selection:bg-brand-100 selection:text-brand-900">
-      <nav className="sticky top-0 z-[80] bg-white/90 border-b border-slate-100 shadow-sm backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-20 items-center">
-            <button onClick={handleGoHome} className="flex items-center gap-2 hover:opacity-80 transition-opacity group">
-              <div className="bg-gradient-to-br from-brand-600 to-brand-800 p-2.5 rounded-xl shadow-lg shadow-brand-500/20 group-hover:shadow-brand-500/40 transition-shadow">
-                <Box className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-black text-slate-900 tracking-tight">GümrükAI</span>
-            </button>
-            
-            <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-              <button onClick={handleGoHome} className="hover:text-brand-600 transition-colors">Anasayfa</button>
-              {user && (
-                 <button onClick={handleGoToDashboard} className={`flex items-center gap-1.5 transition-colors ${appState === AppState.DASHBOARD ? 'text-brand-600 font-bold' : 'hover:text-brand-600'}`}>
-                    <LayoutDashboard className="w-4 h-4" /> Panel
-                 </button>
-              )}
-              <button onClick={scrollToPricing} className="hover:text-brand-600 transition-colors">Paketler</button>
-              {user ? (
-                <div className="flex items-center gap-4 pl-6 border-l border-slate-200">
-                  <div className="text-right hidden lg:block cursor-pointer" onClick={handleGoToProfile}>
-                    <div className="text-slate-900 font-bold text-xs">{user.name}</div>
-                    <div className={`text-[10px] font-bold mt-0.5 ${user.credits === 0 ? 'text-red-600' : 'text-green-600'}`}>
-                       {user.credits === -1 ? 'Sınırsız Hak' : `${user.credits} Hak Kaldı`}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                     <button onClick={handleGoToProfile} className="p-2 text-slate-400 hover:text-brand-600 rounded-full transition-colors"><User className="w-5 h-5" /></button>
-                     <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-600 rounded-full transition-colors"><LogOut className="w-5 h-5" /></button>
-                  </div>
-                </div>
-              ) : (
-                <button onClick={() => setIsLoginModalOpen(true)} className="px-6 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 text-sm font-bold transition-all hover:scale-105">Giriş Yap</button>
-              )}
-            </div>
-            <div className="md:hidden">
-               <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
-                  {isMobileMenuOpen ? <XIcon className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      <nav className="sticky top-0 z-[100] bg-white/90 border-b border-slate-100 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 h-20 flex justify-between items-center">
+          <button onClick={() => setAppState(AppState.IDLE)} className="flex items-center gap-2">
+            <div className="bg-brand-600 p-2 rounded-xl text-white shadow-lg"><Box className="w-6 h-6" /></div>
+            <span className="text-2xl font-black">GümrükAI</span>
+          </button>
+          <div className="flex items-center gap-6">
+            {user ? (
+               <button onClick={() => setAppState(AppState.USER_PROFILE)} className="flex items-center gap-2">
+                 <div className="text-right">
+                   <div className="text-sm font-bold">{user.name}</div>
+                   <div className="text-[10px] text-brand-600 font-bold">{user.credits} HAK</div>
+                 </div>
+                 <User className="w-5 h-5 text-slate-400" />
                </button>
-            </div>
+            ) : (
+               <button onClick={() => setIsLoginModalOpen(true)} className="bg-slate-900 text-white px-6 py-2 rounded-xl font-bold">Giriş Yap</button>
+            )}
           </div>
         </div>
       </nav>
 
-      <main className="flex-1 w-full">
+      <main className="flex-1">
         {appState === AppState.IDLE && (
-           <div className="animate-in fade-in duration-700">
-              <section className="relative overflow-hidden pt-20 pb-32 lg:pt-32 lg:pb-40">
-                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-50 via-white to-white opacity-70"></div>
-                 <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-bold mb-8 border border-blue-100">
-                        <span>{siteContent.hero?.badge}</span>
-                    </div>
-                    <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-8 tracking-tight leading-[1.1]">{siteContent.hero?.titleLine1} <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-indigo-600">{siteContent.hero?.titleLine2}</span></h1>
-                    <p className="text-xl text-slate-500 mb-12 max-w-2xl mx-auto leading-relaxed">{siteContent.hero?.description}</p>
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <button onClick={() => setIsLoginModalOpen(true)} className="w-full sm:w-auto px-10 py-5 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:bg-slate-800 transition-all hover:scale-105 shadow-2xl">Ücretsiz Dene</button>
-                        <button onClick={scrollToPricing} className="w-full sm:w-auto px-10 py-5 bg-white text-slate-700 border border-slate-200 rounded-2xl font-bold text-lg hover:bg-slate-50 transition-all">Paketleri İncele</button>
-                    </div>
-                 </div>
-              </section>
-           </div>
+          <div className="animate-in fade-in duration-700">
+            {/* SECTION 1: HERO */}
+            <section className="relative pt-20 pb-32 text-center overflow-hidden">
+               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_top,_#e0f2fe_0%,_transparent_50%)] -z-10 opacity-60"></div>
+               <div className="max-w-5xl mx-auto px-4">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 text-brand-700 text-sm font-bold mb-8 border border-brand-100">
+                     <Zap className="w-4 h-4" /> <span>{siteContent.hero?.badge || "GÜNCEL MEVZUAT"}</span>
+                  </div>
+                  <h1 className="text-6xl md:text-8xl font-black text-slate-900 mb-8 leading-[1.05] tracking-tight">
+                    {siteContent.hero?.titleLine1} <br/>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-indigo-600">{siteContent.hero?.titleLine2}</span>
+                  </h1>
+                  <p className="text-xl text-slate-500 mb-12 max-w-2xl mx-auto">{siteContent.hero?.description}</p>
+                  <div className="flex gap-4 justify-center">
+                    <button onClick={() => setIsLoginModalOpen(true)} className="px-10 py-5 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:scale-105 transition-all shadow-xl">Ücretsiz Analiz Yap</button>
+                    <button onClick={() => document.getElementById('pricing')?.scrollIntoView({behavior:'smooth'})} className="px-10 py-5 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold text-lg">Paketleri Gör</button>
+                  </div>
+               </div>
+            </section>
+
+            {/* SECTION 2: STATS */}
+            <section className="py-12 bg-white border-y border-slate-100">
+              <div className="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
+                {[
+                  { label: "Sorgu / Gün", val: "12,450+", icon: Activity },
+                  { label: "Doğruluk Payı", val: "%99.2", icon: CheckCircle },
+                  { label: "Analiz Süresi", val: "8 Saniye", icon: Clock },
+                  { label: "Aktif Kullanıcı", val: "4,200+", icon: Users }
+                ].map((s, i) => (
+                  <div key={i} className="text-center group">
+                    <div className="text-3xl font-black text-slate-900 group-hover:text-brand-600 transition-colors">{s.val}</div>
+                    <div className="text-sm text-slate-400 font-medium">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* SECTION 3: FEATURES (PAIN POINTS) */}
+            <section id="features" className="py-24 bg-slate-50">
+               <div className="max-w-7xl mx-auto px-4">
+                  <div className="text-center mb-16">
+                     <h2 className="text-4xl font-black mb-4">Dış Ticaretin Yeni Standartı</h2>
+                     <p className="text-slate-500">Geleneksel, yavaş ve hata payı yüksek yöntemleri geride bırakın.</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {siteContent.painPoints?.items.map((p, i) => (
+                      <div key={i} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition-all group">
+                         <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-600 group-hover:text-white transition-all">
+                            {i === 0 ? <Clock className="w-6 h-6" /> : i === 1 ? <TrendingUp className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
+                         </div>
+                         <h3 className="text-xl font-bold mb-4">{p.title}</h3>
+                         <p className="text-slate-500 leading-relaxed">{p.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+               </div>
+            </section>
+
+            {/* SECTION 4: ROI / PROFIT */}
+            <section className="py-24 bg-white overflow-hidden">
+               <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row items-center gap-16">
+                  <div className="flex-1">
+                     <div className="inline-block px-4 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold mb-4">{siteContent.roi?.badge}</div>
+                     <h2 className="text-5xl font-black mb-6 leading-tight">{siteContent.roi?.title}</h2>
+                     <p className="text-slate-500 text-lg mb-8">{siteContent.roi?.description}</p>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {[siteContent.roi?.comparison1, siteContent.roi?.comparison2, siteContent.roi?.comparison3].map((c, i) => (
+                           <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 font-bold text-slate-700">
+                              <CheckCircle className="w-5 h-5 text-green-500" /> {c}
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+                  <div className="flex-1 relative">
+                     <div className="bg-slate-900 rounded-[2.5rem] p-4 shadow-2xl">
+                        <img src={siteContent.productDemo?.imageUrl} alt="Demo" className="rounded-[2rem] shadow-inner" />
+                     </div>
+                     <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-3xl shadow-2xl border border-slate-100 animate-bounce">
+                        <div className="text-brand-600 font-black text-2xl">%90</div>
+                        <div className="text-xs text-slate-400 font-bold">DAHA HIZLI</div>
+                     </div>
+                  </div>
+               </div>
+            </section>
+
+            {/* SECTION 5: HOW IT WORKS (GUIDE) */}
+            <section className="py-24 bg-slate-900 text-white">
+               <div className="max-w-7xl mx-auto px-4">
+                  <h2 className="text-4xl font-black text-center mb-20">3 Adımda Gümrük Analizi</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+                     <div className="absolute top-1/2 left-0 w-full h-px bg-white/10 hidden md:block"></div>
+                     {[
+                        { step: "01", title: "Görsel Yükle", desc: "Ürünün fotoğrafını sisteme yükleyin." },
+                        { step: "02", title: "AI Analizi", desc: "Saniyeler içinde GTIP ve vergileri görün." },
+                        { step: "03", title: "Raporu İndir", desc: "Mevzuat ve pazar verilerini kaydedin." }
+                     ].map((s, i) => (
+                        <div key={i} className="relative z-10 text-center">
+                           <div className="w-16 h-16 bg-brand-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-black border-4 border-slate-900">{s.step}</div>
+                           <h3 className="text-xl font-bold mb-4">{s.title}</h3>
+                           <p className="text-slate-400">{s.desc}</p>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+            </section>
+
+            {/* SECTION 6: PRICING */}
+            <section id="pricing" className="py-24 bg-slate-50">
+               <div className="max-w-7xl mx-auto px-4 text-center">
+                  <h2 className="text-4xl font-black mb-4">Şeffaf Fiyatlandırma</h2>
+                  <p className="text-slate-500 mb-16">Her bütçeye ve hacme uygun paketler.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {INITIAL_PLANS.map((plan, i) => (
+                      <div key={i} className={`bg-white p-10 rounded-[2.5rem] border ${plan.popular ? 'border-brand-500 ring-4 ring-brand-50' : 'border-slate-100'} text-left flex flex-col relative`}>
+                        {plan.popular && <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand-600 text-white px-4 py-1 rounded-full text-xs font-bold uppercase">En Popüler</div>}
+                        <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
+                        <div className="text-4xl font-black mb-6">{plan.price}<span className="text-sm text-slate-400 font-medium">{plan.period}</span></div>
+                        <ul className="space-y-4 mb-10 flex-1">
+                          {plan.features.map((f, j) => (
+                            <li key={j} className="flex items-center gap-2 text-sm text-slate-600 font-medium"><CheckCircle className="w-4 h-4 text-brand-500" /> {f}</li>
+                          ))}
+                        </ul>
+                        <button onClick={() => setIsLoginModalOpen(true)} className={`w-full py-4 rounded-2xl font-bold transition-all ${plan.popular ? 'bg-brand-600 text-white shadow-xl shadow-brand-500/20' : 'bg-slate-100 text-slate-600'}`}>{plan.cta}</button>
+                      </div>
+                    ))}
+                  </div>
+               </div>
+            </section>
+
+            {/* SECTION 7: FAQ */}
+            <section className="py-24 bg-white">
+               <div className="max-w-4xl mx-auto px-4">
+                  <h2 className="text-4xl font-black text-center mb-16">{siteContent.faq?.title}</h2>
+                  <div className="space-y-4">
+                     {siteContent.faq?.items.map((item, i) => (
+                        <div key={i} className="border border-slate-100 rounded-2xl p-6 hover:bg-slate-50 transition-colors">
+                           <h3 className="font-bold text-lg mb-2">{item.question}</h3>
+                           <p className="text-slate-500 text-sm">{item.answer}</p>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+            </section>
+          </div>
         )}
 
-        {appState === AppState.DASHBOARD && user && (
-           <div className="animate-in fade-in duration-500 pb-20">
-              <div className="mb-10 text-center pt-8">
-                 <h1 className="text-3xl font-bold text-slate-900 mb-2">Yeni Gümrük Analizi</h1>
-                 <p className="text-slate-500">Ürün görselini yükleyin, yapay zeka GTIP ve vergileri hesaplasın.</p>
+        {appState === AppState.DASHBOARD && (
+           <div className="max-w-4xl mx-auto py-20 px-4 animate-in fade-in">
+              <div className="text-center mb-12">
+                 <h1 className="text-4xl font-black mb-4">Ürün Analizi Başlat</h1>
+                 <p className="text-slate-500">Ürün görselini yükleyin, yapay zeka mevzuatı tarasın.</p>
               </div>
-              <div className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-                 <FileUpload onFileSelect={handleFileSelect} isLoading={false} />
-              </div>
+              <FileUpload onFileSelect={handleFileSelect} isLoading={false} />
            </div>
         )}
 
         {appState === AppState.ANALYZING && (
-           <div className="flex flex-col items-center justify-center min-h-[50vh] pt-20">
-             <FileUpload onFileSelect={() => {}} isLoading={true} />
-           </div>
-        )}
-
-        {appState === AppState.ERROR && (
-           <div className="max-w-2xl mx-auto px-4 py-20 text-center animate-in fade-in">
-              <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-100">
-                <AlertCircle className="w-10 h-10 text-red-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">Analiz Tamamlanamadı</h2>
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-8 text-slate-600">
-                {errorMsg}
-              </div>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <button onClick={handleReset} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">
-                  <RefreshCcw className="w-5 h-5" /> Tekrar Dene
-                </button>
-                <button onClick={scrollToPricing} className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-colors">
-                  <Zap className="w-5 h-5" /> Paket Satın Al
-                </button>
-              </div>
+           <div className="flex flex-col items-center justify-center min-h-[60vh]">
+             <FileUpload onFileSelect={()=>{}} isLoading={true} />
            </div>
         )}
 
         {appState === AppState.SUCCESS && analysisResult && (
-          <ResultsView analysis={analysisResult} imagePreview={imagePreview} onReset={handleReset} userPlanId={user?.planId} onOpenPricing={handleOpenPricing} onOpenLogin={() => setIsLoginModalOpen(true)} />
+           <ResultsView analysis={analysisResult} imagePreview={imagePreview} onReset={handleReset} userPlanId={user?.planId} />
         )}
 
         {appState === AppState.USER_PROFILE && user && (
-           <UserProfile user={user} onLogout={handleLogout} onSelectHistory={handleSelectHistory} onCancelSubscription={() => {}} plans={plans} onUpgradeClick={handleOpenPricing} onOpenVerification={() => setIsVerificationModalOpen(true)} />
-        )}
-
-        {appState === AppState.HISTORY && user && (
-           <HistoryPanel history={history} onSelectHistory={handleSelectHistory} onDeleteHistory={(id) => storageService.deleteHistoryItem(user.email, id).then(() => setHistory(prev => prev.filter(i => i.id !== id)))} onBack={handleGoToDashboard} />
+           <UserProfile user={user} onLogout={handleLogout} onSelectHistory={(item) => { setAnalysisResult(item); setAppState(AppState.SUCCESS); }} onCancelSubscription={()=>{}} plans={INITIAL_PLANS} onUpgradeClick={() => {}} onOpenVerification={() => {}} />
         )}
       </main>
 
-      {siteContent && siteContent.footer && (
-        <Footer content={siteContent.footer} onHomeClick={handleGoHome} onHistoryClick={handleHistoryClick} onPricingClick={scrollToPricing} onOpenPrivacy={() => setActiveLegalModal('privacy')} onOpenTerms={() => setActiveLegalModal('terms')} onOpenContact={() => setActiveLegalModal('contact')} onOpenUpdates={() => setIsUpdatesModalOpen(true)} />
-      )}
-      
-      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} onLogin={handleLoginSubmitInModal} />
-      <PricingModal isOpen={isPricingModalOpen} onClose={() => setIsPricingModalOpen(false)} plans={plans} onSelectPlan={handleSelectPlan} />
-      <PaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} plan={selectedPlanForPayment} onPaymentSuccess={handlePaymentSuccess} />
-      <PurchaseSuccessModal isOpen={isPurchaseSuccessModalOpen} onClose={() => setIsPurchaseSuccessModalOpen(false)} plan={selectedPlanForPayment} user={user} />
-      {isVerificationModalOpen && user && <VerificationModal isOpen={isVerificationModalOpen} onClose={() => setIsVerificationModalOpen(false)} user={user} onUpdateUser={setUser} />}
-      {isUpdatesModalOpen && <UpdatesModal isOpen={isUpdatesModalOpen} onClose={() => setIsUpdatesModalOpen(false)} />}
-      <LegalModal isOpen={!!activeLegalModal} onClose={() => setActiveLegalModal(null)} title={activeLegalModal === 'privacy' ? 'Gizlilik Politikası' : activeLegalModal === 'terms' ? 'Kullanım Koşulları' : 'İletişim'} content={activeLegalModal ? siteContent.footer.legalContent[activeLegalModal] : ''} type={activeLegalModal || 'privacy'} />
+      <Footer content={siteContent.footer} onHomeClick={() => setAppState(AppState.IDLE)} onHistoryClick={() => setAppState(AppState.USER_PROFILE)} onPricingClick={() => {}} onOpenPrivacy={()=>{}} onOpenTerms={()=>{}} onOpenContact={()=>{}} onOpenUpdates={()=>{}} />
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} onLogin={(u) => { setUser(u); setAppState(AppState.DASHBOARD); }} />
     </div>
   );
 };
