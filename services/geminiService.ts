@@ -22,8 +22,14 @@ const fileToGenerativePart = async (file: File): Promise<string> => {
  * Ürün görselini Gemini 3.0 Pro kullanarak analiz eder.
  */
 export const analyzeProductImage = async (file: File): Promise<CustomsAnalysis> => {
-  // SDK kuralları gereği apiKey isimlendirilmiş parametre olarak process.env.API_KEY'den alınır.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // API Key Kontrolü
+  const apiKey = process.env.API_KEY;
+
+  if (!apiKey) {
+    throw new Error("Gemini API anahtarı bulunamadı. Lütfen .env dosyanızı veya sunucu ayarlarınızı (API_KEY) kontrol edin.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
 
   try {
     const base64Data = await fileToGenerativePart(file);
@@ -102,6 +108,10 @@ export const analyzeProductImage = async (file: File): Promise<CustomsAnalysis> 
 
   } catch (error: any) {
     console.error("Gemini API Hatası:", error);
-    throw new Error(error.message || "Görsel analiz edilirken bir hata oluştu. Lütfen bağlantınızı ve .env dosyanızdaki API anahtarınızı kontrol edin.");
+    // Hata mesajını kullanıcıya anlamlı ilet
+    const msg = error.message?.includes("API key") 
+      ? "API anahtarı hatası. Lütfen sistem yöneticisi ile iletişime geçin." 
+      : (error.message || "Görsel analiz edilirken bir hata oluştu.");
+    throw new Error(msg);
   }
 };

@@ -77,36 +77,65 @@ export const storageService = {
   getCurrentUserProfile: async (): Promise<User> => {
     if (!isSupabaseConfigured()) throw new Error("Supabase konfigürasyonu eksik.");
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("Oturum bulunamadı.");
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+        throw new Error("Oturum bulunamadı. Lütfen tekrar giriş yapın.");
+    }
 
-    let { data: profile } = await supabase
+    // 406 Hatasını önlemek için maybeSingle() kullanıyoruz.
+    let { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', session.user.id)
-      .single();
+      .maybeSingle();
 
-    if (!profile) {
-      const { data: newProfile } = await supabase.from('profiles').insert({
-        id: session.user.id,
-        email: session.user.email,
-        full_name: session.user.user_metadata?.full_name || 'Kullanıcı',
-        credits: 5
-      }).select().single();
-      profile = newProfile;
+    // Profil yoksa veya hata varsa, oturum bilgilerinden geçici bir profil oluştur (Fail-safe)
+    // Bu sayede "Cannot read properties of null" hatası almazsın.
+    if (profileError || !profile) {
+       console.warn("Profil bulunamadı, oturum verisi kullanılıyor.", profileError);
+       
+       // Fallback Insert Denemesi (Eğer trigger çalışmadıysa)
+       try {
+         const { data: newProfile } = await supabase.from('profiles').upsert({
+            id: session.user.id,
+            email: session.user.email,
+            full_name: session.user.user_metadata?.full_name || 'Kullanıcı',
+            credits: 5,
+            plan_id: 'free'
+         }).select().single();
+         if (newProfile) profile = newProfile;
+       } catch (insertError) {
+         console.error("Fallback profil oluşturma hatası:", insertError);
+       }
     }
 
+    // Hala profil yoksa session'dan sahte obje dön
+    const finalProfile = profile || {
+        email: session.user.email,
+        full_name: session.user.user_metadata?.full_name || 'Misafir',
+        role: 'user',
+        credits: 5,
+        plan_id: 'free',
+        title: 'İthalatçı',
+        subscription_status: 'active'
+    };
+
     return { 
-        email: profile.email, 
-        name: profile.full_name, 
-        role: profile.role || 'user', 
-        credits: profile.credits || 0,
-        planId: profile.plan_id || 'free',
-        title: profile.title || 'İthalatçı',
+        email: finalProfile.email || session.user.email || "", 
+        name: finalProfile.full_name || "Kullanıcı", 
+        role: finalProfile.role || 'user', 
+        credits: finalProfile.credits ?? 5,
+        planId: finalProfile.plan_id || 'free',
+        title: finalProfile.title || 'İthalatçı',
         isEmailVerified: !!session.user.email_confirmed_at,
         isPhoneVerified: !!session.user.phone_confirmed_at,
-        subscriptionStatus: profile.subscription_status || 'active',
-        discount: profile.discount
+        subscriptionStatus: finalProfile.subscription_status || 'active',
+        discount: finalProfile.discount_active ? {
+            isActive: true,
+            rate: finalProfile.discount_rate || 0,
+            endDate: finalProfile.discount_end_date || new Date().toISOString()
+        } : undefined
     };
   },
 
@@ -121,12 +150,24 @@ export const storageService = {
     });
     
     if (error) throw new Error(error.message);
-    return { email, name, role: 'user', credits: 5, planId: 'free', title: 'Yeni Üye', isEmailVerified: false, isPhoneVerified: false, subscriptionStatus: 'active' };
+    
+    // Trigger'ın çalışmasını beklemeden dön, sonraki çağrıda getCurrentUser düzeltecek
+    return { 
+        email, 
+        name, 
+        role: 'user', 
+        credits: 5, 
+        planId: 'free', 
+        title: 'Yeni Üye', 
+        isEmailVerified: false, 
+        isPhoneVerified: false, 
+        subscriptionStatus: 'active' 
+    };
   },
 
   loginUser: async (email: string, password: string): Promise<User> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new Error("Giriş başarısız.");
+    if (error) throw new Error("Giriş başarısız. Bilgilerinizi kontrol edin.");
     return await storageService.getCurrentUserProfile();
   },
 
@@ -151,7 +192,7 @@ export const storageService = {
     });
 
     const { data: profile } = await supabase.from('profiles').select('credits, plan_id').eq('id', user.id).single();
-    if (profile && profile.credits > 0) {
+    if (profile && profile.plan_id !== '2' && profile.plan_id !== '3' && profile.credits > 0) {
       await supabase.from('profiles').update({ credits: profile.credits - 1 }).eq('id', user.id);
     }
   },
@@ -188,7 +229,7 @@ export const storageService = {
 
   fetchSiteContent: async (): Promise<SiteContent> => {
     if (!isSupabaseConfigured()) return DEFAULT_CONTENT;
-    const { data } = await supabase.from('site_config').select('content').single();
+    const { data } = await supabase.from('site_config').select('content').maybeSingle();
     if (data?.content) {
       localStorage.setItem(SITE_CONTENT_KEY, JSON.stringify(data.content));
       return { ...DEFAULT_CONTENT, ...data.content };
@@ -196,13 +237,12 @@ export const storageService = {
     return DEFAULT_CONTENT;
   },
 
-  // Fix: Added missing getAllUsers method
   getAllUsers: async (): Promise<User[]> => {
     if (!isSupabaseConfigured()) return [];
     const { data } = await supabase.from('profiles').select('*');
     return (data || []).map(profile => ({
-      email: profile.email,
-      name: profile.full_name,
+      email: profile.email || "no-email",
+      name: profile.full_name || "İsimsiz",
       role: profile.role || 'user',
       credits: profile.credits || 0,
       planId: profile.plan_id || 'free',
@@ -210,11 +250,10 @@ export const storageService = {
       isEmailVerified: true, 
       isPhoneVerified: true, 
       subscriptionStatus: profile.subscription_status || 'active',
-      discount: profile.discount
+      discount: profile.discount_active ? { isActive: true, rate: profile.discount_rate, endDate: profile.discount_end_date } : undefined
     }));
   },
 
-  // Fix: Added missing getDashboardStats method
   getDashboardStats: async (): Promise<DashboardStats> => {
     if (!isSupabaseConfigured()) {
         return {
@@ -246,7 +285,6 @@ export const storageService = {
     };
   },
 
-  // Fix: Added missing saveSiteContent method
   saveSiteContent: async (content: SiteContent): Promise<void> => {
     if (isSupabaseConfigured()) {
         await supabase.from('site_config').upsert({ id: 1, content: content });
@@ -254,7 +292,6 @@ export const storageService = {
     localStorage.setItem(SITE_CONTENT_KEY, JSON.stringify(content));
   },
 
-  // Fix: Added missing updateUserSubscription method
   updateUserSubscription: async (plan: SubscriptionPlan, userEmail: string): Promise<void> => {
     await supabase.from('profiles').update({ 
       plan_id: plan.id, 
@@ -262,19 +299,16 @@ export const storageService = {
     }).eq('email', userEmail);
   },
 
-  // Fix: Added missing deleteUser method
   deleteUser: async (email: string): Promise<void> => {
     await supabase.from('profiles').delete().eq('email', email);
   },
 
-  // Fix: Added missing getUserBilling method
   getUserBilling: async (email: string): Promise<BillingHistory[]> => {
     return [
       { id: '1', date: '01.02.2025', planName: 'Profesyonel', amount: '2.499 ₺', status: 'paid', invoiceUrl: '#' }
     ];
   },
 
-  // Fix: Added missing cancelUserSubscription method
   cancelUserSubscription: async (): Promise<User> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not found");
@@ -285,14 +319,18 @@ export const storageService = {
     return storageService.getCurrentUserProfile();
   },
 
-  // Fix: Added missing applyRetentionOffer method
   applyRetentionOffer: async (): Promise<User> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not found");
     const endDate = new Date();
     endDate.setMonth(endDate.getMonth() + 3);
-    const discount = { isActive: true, rate: 0.5, endDate: endDate.toISOString() };
-    await supabase.from('profiles').update({ discount }).eq('id', user.id);
+    
+    await supabase.from('profiles').update({ 
+        discount_active: true,
+        discount_rate: 0.5,
+        discount_end_date: endDate.toISOString()
+    }).eq('id', user.id);
+    
     return storageService.getCurrentUserProfile();
   }
 };
